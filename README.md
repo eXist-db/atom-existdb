@@ -1,5 +1,6 @@
-# existdb package
+# Atom editor package for eXistdb
 
-A short description of your package.
+Provides
 
-![A screenshot of your package](https://f.cloud.github.com/assets/69169/2290250/c35d867a-a017-11e3-86be-cd7c5bf3ff9b.gif)
+* linting and autocomplete for XQuery scripts written for the eXist-db Native XML Database
+* execution of XQuery scripts within the editor
