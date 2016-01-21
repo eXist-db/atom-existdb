@@ -1,0 +1,52 @@
+{
+  "name": "existdb",
+  "main": "./lib/existdb",
+  "version": "0.0.1",
+  "description": "Provides linting and autocomplete for XQuery scripts written for the eXist-db Native XML Database.",
+  "keywords": [
+      "xmldb",
+      "eXist-db",
+      "xquery",
+      "xml"
+  ],
+  "activationHooks": ["language-jsoniq:grammar-used"],
+  "repository": "https://github.com/atom/existdb",
+  "license": "MIT",
+  "engines": {
+    "atom": ">=1.0.0 <2.0.0"
+  },
+  "dependencies": {
+      "atom-linter": "^4.3.1",
+      "atom-package-deps": "^3.0.7",
+      "jquery": "^2.1.4"
+  },
+  "package-deps": [
+    "linter"
+  ],
+  "providedServices": {
+    "autocomplete.provider": {
+        "versions": {
+            "2.0.0": "provide"
+        }
+    },
+    "linter": {
+        "versions": {
+            "1.0.0": "provideLinter"
+        }
+    }
+  },
+  "coffeelintConfig": {
+    "indentation" : {
+        "level" : "error",
+        "value" : 4
+    },
+    "line_endings" : {
+        "value" : "unix",
+        "level" : "error"
+    },
+    "max_line_length": {
+        "name": "max_line_length",
+        "level": "ignore"
+    }
+  }
+}
