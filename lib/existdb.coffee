@@ -1,4 +1,4 @@
-ExistdbView = require './existdb-view'
+EXistSymbolsView = require './existdb-view'
 Config = require './project-config'
 {CompositeDisposable, Range} = require 'atom'
 Provider = require "./provider"
@@ -13,6 +13,7 @@ module.exports = Existdb =
     subscriptions: null
     config: null
     provider: undefined
+    symbolsView: undefined
 
     activate: (state) ->
         console.log "Activating eXistdb"
@@ -21,11 +22,14 @@ module.exports = Existdb =
 
         @provider = new Provider(@config)
 
+        @symbolsView = new EXistSymbolsView(@config)
+
         # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
         @subscriptions = new CompositeDisposable
 
         # Register command that toggles this view
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:run': => @run(atom.workspace.getActiveTextEditor())
+        @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:file-symbols': => @gotoFileSymbol()
 
     deactivate: ->
         @config.destroy()
@@ -35,39 +39,53 @@ module.exports = Existdb =
     serialize: ->
         #existdbViewState: @existdbView.serialize()
 
-    run: (editor) ->
-        console.log 'Existdb was toggled!'
+    gotoFileSymbol: ->
+        editor = atom.workspace.getActiveTextEditor()
+        @symbolsView.populate(editor)
 
+    run: (editor) ->
         relativePath = atom.project.relativizePath(editor.getPath())[1]
         collection = path.dirname(relativePath)
-        basePath = "xmldb:exist://" + @config.data.root + "/" + collection
+        basePath = "xmldb:exist://#{@config.data.root}/#{collection}"
         self = this
+        notifTimeout =
+            setTimeout(
+                -> atom.notifications.addInfo("Running query ..."),
+                500
+            )
         $.ajax
             type: "POST"
-            url: self.config.data.server + "/apps/eXide/execute"
+            url: self.config.data.server + "/apps/atom-editor/execute"
             dataType: "text"
             data: { "qu": editor.getText(), "base": basePath, "output": "adaptive" }
-            success: (data) ->
-                console.log(data)
-                promise = atom.workspace.open(null, { split: "bottom" })
-                promise.then((newEditor) -> newEditor.setText(data))
-        #if @modalPanel.isVisible()
-        #  @modalPanel.hide()
-        #else
-        #  @modalPanel.show()
+            username: self.config.data.user
+            password: self.config.data.password
+            success: (data, status, xhr) ->
+                clearTimeout(notifTimeout)
+                promise = atom.workspace.open(null, { split: "left" })
+                promise.then((newEditor) ->
+                    grammar = atom.grammars.grammarForScopeName("text.xml")
+                    newEditor.setGrammar(grammar)
+                    newEditor.setText(data)
+                    elapsed = xhr.getResponseHeader("X-elapsed")
+                    atom.notifications.addSuccess("Query executed in #{elapsed}s")
+                )
+            error: (xhr, status) ->
+                clearTimeout(notifTimeout)
+                atom.notifications.addError("Query execution failed: #{status}",
+                    { detail: xhr.responseText, dismissable: true })
 
     provide: ->
         return @provider
 
     provideLinter: ->
-        console.log("getting linter")
         provider =
             name: 'xqlint'
             grammarScopes: ['source.xq']
             scope: 'file'
             lintOnFly: true
             lint: (textEditor) =>
-                return @lintOpenFile textEditor
+                return @lintOpenFile(textEditor)
 
     lintOpenFile: (editor) ->
         relativePath = atom.project.relativizePath(editor.getPath())[1]
@@ -77,12 +95,14 @@ module.exports = Existdb =
         return new Promise (resolve) ->
             $.ajax
                 type: "PUT"
-                url: self.config.data.server + "/apps/eXide/modules/compile.xql"
+                url: self.config.data.server + "/apps/atom-editor/compile.xql"
                 dataType: "json"
                 data: editor.getText()
                 headers:
                     "X-BasePath": basePath
                 contentType: "application/octet-stream"
+                username: self.config.data.user
+                password: self.config.data.password
                 success: (data) ->
                     if data.result == "fail"
                         error = self.parseErrMsg(data.error)
@@ -101,7 +121,7 @@ module.exports = Existdb =
                         resolve([])
 
     parseErrMsg: (error) ->
-        if error.line
+        if error.line?
             msg = error["#text"]
         else
             msg = error
@@ -109,7 +129,7 @@ module.exports = Existdb =
         str = COMPILE_MSG_RE.exec(msg)
         line = -1
 
-        if str
+        if str?
             line = parseInt(str[1]) - 1
         else if error.line
             line = parseInt(error.line) - 1
