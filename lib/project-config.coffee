@@ -1,5 +1,13 @@
 fs = require 'fs'
 path = require 'path'
+$ = require('jquery')
+
+defaultConfig = {
+    "server": "http://localhost:8080/exist",
+    "user": "guest",
+    "password": "guest",
+    "root": "/db"
+}
 
 module.exports =
 class ProjectConfig
@@ -23,11 +31,11 @@ class ProjectConfig
                         @data = JSON.parse(contents)
                     catch e
                         atom.notifications.addInfo('Error parsing .existdb.json.')
+                    @data = $.extend({}, defaultConfig, @data)
 
     isDirectory: (dir) ->
         try return fs.statSync(dir).isDirectory()
         catch then return false
 
     destroy: ->
-        for disposable in disposables
-            disposable.dispose()
+        disposable.dispose() for disposable in disposables
