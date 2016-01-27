@@ -26,11 +26,11 @@ module.exports =
             self = this
             return new Promise (resolve) ->
                 $.ajax
-                    url: self.config.data.server +
+                    url: self.config.getConfig(editor).server +
                         "/apps/atom-editor/atom-autocomplete.xql?" +
                             params.join("&")
-                    username: self.config.data.user
-                    password: self.config.data.password
+                    username: self.config.getConfig(editor).user
+                    password: self.config.getConfig(editor).password
                     success: (data) ->
                         resolve(data)
 

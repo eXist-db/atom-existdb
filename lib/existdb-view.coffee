@@ -24,7 +24,7 @@ class EXistSymbolsView extends SelectListView
 
     populate: (editor) ->
         @getFileSymbols(editor)
-        #@getImportedSymbols(editor)
+        @getImportedSymbols(editor)
 
         @storeFocusedElement()
         @panel.show()
@@ -35,7 +35,7 @@ class EXistSymbolsView extends SelectListView
             @li class: 'two-lines', =>
                 @div signature, class: 'primary-line'
                 dir = path.basename(file)
-                @div "#{dir} #{line + 1}", class: 'secondary-line'
+                @div "#{dir} #{if line > 0 then line + 1 else ''}", class: 'secondary-line'
 
     confirmed: (item) ->
         @cancel()
@@ -60,21 +60,21 @@ class EXistSymbolsView extends SelectListView
 
     getImportedSymbols: (editor) ->
         params = util.modules(@config, editor, false)
-        console.log("params: %o", params)
+        config = @config.getConfig(editor)
         self = this
         $.ajax
-            url: self.config.data.server +
+            url: config.server +
                 "/apps/atom-editor/atom-autocomplete.xql?" +
                     params.join("&")
-            username: self.config.data.user
-            password: self.config.data.password
+            username: config.user
+            password: config.password
             success: (data) ->
                 for item in data
                     self.symbols.push({
                         type: item.type
                         name: item.text
                         signature: item.text
-                        line: 0
+                        line: -1
                         file: item.path
                     })
                 self.setItems(self.symbols)

@@ -32,6 +32,6 @@ module.exports =
                     params.push("mprefix=" + encodeURIComponent(matches[1]))
                     params.push("uri=" + encodeURIComponent(matches[2]))
                     params.push("source=" + encodeURIComponent(matches[3]))
-        basePath = "xmldb:exist://" + config.data.root + "/" + collection
+        basePath = "xmldb:exist://" + config.getConfig(editor).root + "/" + collection
         params.push("base=" + encodeURIComponent(basePath))
         params

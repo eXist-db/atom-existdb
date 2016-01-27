@@ -2,27 +2,49 @@ EXistSymbolsView = require './existdb-view'
 Config = require './project-config'
 {CompositeDisposable, Range} = require 'atom'
 Provider = require "./provider"
+Watch = require "./watch"
 path = require 'path'
 $ = require 'jquery'
 
 COMPILE_MSG_RE = /.*line:?\s(\d+)/i
 
 module.exports = Existdb =
+    config:
+        server:
+            title: 'Root HTTP URI of the eXist Server to connect to'
+            type: 'string'
+            default: 'http://localhost:8080/exist'
+        user:
+            type: 'string'
+            default: 'admin'
+        password:
+            type: 'string'
+            default: ''
+        root:
+            title: 'Root collection'
+            description: """The root collection to resolve relative paths against.
+                Set this to the app root if you are working on an application package,
+                e.g. /db/apps/test-app."""
+            type: 'string'
+            default: '/db'
     existdbView: null
     modalPanel: null
     subscriptions: null
-    config: null
+    projectConfig: null
     provider: undefined
     symbolsView: undefined
+    watch: undefined
 
     activate: (state) ->
         console.log "Activating eXistdb"
 
-        @config = new Config()
+        @projectConfig = new Config()
 
-        @provider = new Provider(@config)
+        @provider = new Provider(@projectConfig)
 
-        @symbolsView = new EXistSymbolsView(@config)
+        @symbolsView = new EXistSymbolsView(@projectConfig)
+
+        #@watch = new Watch(@projectConfig)
 
         # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
         @subscriptions = new CompositeDisposable
@@ -32,7 +54,7 @@ module.exports = Existdb =
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:file-symbols': => @gotoFileSymbol()
 
     deactivate: ->
-        @config.destroy()
+        @projectConfig.destroy()
 
         @subscriptions.dispose()
 
@@ -46,7 +68,7 @@ module.exports = Existdb =
     run: (editor) ->
         relativePath = atom.project.relativizePath(editor.getPath())[1]
         collection = path.dirname(relativePath)
-        basePath = "xmldb:exist://#{@config.data.root}/#{collection}"
+        basePath = "xmldb:exist://#{@projectConfig.getConfig(editor).root}/#{collection}"
         self = this
         notifTimeout =
             setTimeout(
@@ -55,11 +77,11 @@ module.exports = Existdb =
             )
         $.ajax
             type: "POST"
-            url: self.config.data.server + "/apps/atom-editor/execute"
+            url: self.projectConfig.getConfig(editor).server + "/apps/atom-editor/execute"
             dataType: "text"
             data: { "qu": editor.getText(), "base": basePath, "output": "adaptive" }
-            username: self.config.data.user
-            password: self.config.data.password
+            username: self.projectConfig.getConfig(editor).user
+            password: self.projectConfig.getConfig(editor).password
             success: (data, status, xhr) ->
                 clearTimeout(notifTimeout)
                 promise = atom.workspace.open(null, { split: "left" })
@@ -90,30 +112,33 @@ module.exports = Existdb =
     lintOpenFile: (editor) ->
         relativePath = atom.project.relativizePath(editor.getPath())[1]
         collection = path.dirname(relativePath)
-        basePath = "xmldb:exist://" + @config.data.root + "/" + collection
+        basePath = "xmldb:exist://" + @projectConfig.getConfig(editor).root + "/" + collection
         self = this
         return new Promise (resolve) ->
             $.ajax
                 type: "PUT"
-                url: self.config.data.server + "/apps/atom-editor/compile.xql"
+                url: self.projectConfig.getConfig(editor).server + "/apps/atom-editor/compile.xql"
                 dataType: "json"
                 data: editor.getText()
                 headers:
                     "X-BasePath": basePath
                 contentType: "application/octet-stream"
-                username: self.config.data.user
-                password: self.config.data.password
+                username: self.projectConfig.getConfig(editor).user
+                password: self.projectConfig.getConfig(editor).password
                 success: (data) ->
                     if data.result == "fail"
                         error = self.parseErrMsg(data.error)
-                        end = editor.lineTextForBufferRow(error.line).length
+                        range = null
+                        if error.line > -1
+                            end = editor.lineTextForBufferRow(error.line).length
+                            range = new Range(
+                                [error.line, error.column - 1],
+                                [error.line, end - 1]
+                            )
                         message = {
                             type: 'Error',
                             text: error.msg,
-                            range: new Range(
-                                [error.line, error.column - 1],
-                                [error.line, end - 1]
-                            ),
+                            range: range,
                             filePath: editor.getPath()
                         }
                         resolve([message])
