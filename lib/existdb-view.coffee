@@ -30,19 +30,38 @@ class EXistSymbolsView extends SelectListView
         @panel.show()
         @focusFilterEditor()
 
-    viewForItem: ({signature, line, file, type}) ->
+    viewForItem: ({name, signature, line, file, type}) ->
         $$ ->
             @li class: 'two-lines', =>
-                @div signature, class: 'primary-line'
+                @div (if type is "variable" then "$#{name}" else signature), class: 'primary-line'
                 dir = path.basename(file)
                 @div "#{dir} #{if line > 0 then line + 1 else ''}", class: 'secondary-line'
 
     confirmed: (item) ->
         @cancel()
         editor = atom.workspace.getActiveTextEditor()
-        for symbol in @symbols when symbol.signature is item.signature
-            editor.scrollToBufferPosition([symbol.line, 0])
-            editor.setCursorBufferPosition([symbol.line, 0])
+        if item.file == editor.getPath()
+            editor.scrollToBufferPosition([item.line, 0])
+            editor.setCursorBufferPosition([item.line, 0])
+        else
+            @open(editor, item.file, item)
+
+    open: (editor, file, item) ->
+        xmldbRoot = "xmldb:exist://#{@config.getConfig(editor).root}/"
+        if file.indexOf(xmldbRoot) is 0
+            file = file.substring(xmldbRoot.length)
+        else
+            file = path.resolve(editor.getPath(), file)
+        console.log("opening file: %s", file)
+        promise = atom.workspace.open(file)
+        if item?
+            promise.then((newEditor) =>
+                symbols = @parseLocalFunctions(newEditor)
+                for symbol in symbols
+                    if symbol.name == item.name
+                        newEditor.scrollToBufferPosition([symbol.line, 0])
+                        newEditor.setCursorBufferPosition([symbol.line, 0])
+            )
 
     cancelled: ->
         @panel.hide()
@@ -61,6 +80,7 @@ class EXistSymbolsView extends SelectListView
     getImportedSymbols: (editor) ->
         params = util.modules(@config, editor, false)
         config = @config.getConfig(editor)
+        @setLoading("Loading imported symbols...")
         self = this
         $.ajax
             url: config.server +
@@ -72,12 +92,13 @@ class EXistSymbolsView extends SelectListView
                 for item in data
                     self.symbols.push({
                         type: item.type
-                        name: item.text
+                        name: item.name
                         signature: item.text
                         line: -1
                         file: item.path
                     })
                 self.setItems(self.symbols)
+                self.setLoading('')
 
     parseLocalFunctions: (editor) ->
         text = editor.getText()
@@ -92,12 +113,14 @@ class EXistSymbolsView extends SelectListView
                 end = @findMatchingParen(text, offset)
                 name = (if funcDef.length == 4 then funcDef[3] else funcDef[2]).replace(trimRe,"")
                 status = if funcDef.length == 4 then funcDef[2] else "public"
-                signature =  name + "(" + text.substring(offset, end) + ")"
+                args = text.substring(offset, end)
+                cardinality = args.split(/\s*,\s*/).length
+                signature =  name + "(" + args + ")"
                 status = "private" unless status.indexOf("%private") == -1
 
                 symbols.push({
                     type: "function"
-                    name: name
+                    name: "#{name}##{cardinality}"
                     signature: signature
                     status: status
                     line: @getLine(text, offset)

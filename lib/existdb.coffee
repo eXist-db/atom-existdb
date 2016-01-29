@@ -44,7 +44,7 @@ module.exports = Existdb =
 
         @symbolsView = new EXistSymbolsView(@projectConfig)
 
-        #@watch = new Watch(@projectConfig)
+        @watch = new Watch(@projectConfig)
 
         # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
         @subscriptions = new CompositeDisposable
@@ -57,6 +57,8 @@ module.exports = Existdb =
         @projectConfig.destroy()
 
         @subscriptions.dispose()
+
+        @watch.dispose()
 
     serialize: ->
         #existdbViewState: @existdbView.serialize()

@@ -1,22 +1,28 @@
 {CompositeDisposable} = require 'atom'
 fs = require 'fs'
+request = require 'request'
 path = require 'path'
+mime = require 'mime'
 $ = require('jquery')
 
 module.exports =
 class Watch
 
     @disposables: undefined
-    @watchers
+    @watchers: undefined
 
     constructor: (@config) ->
         @disposables = new CompositeDisposable()
         @disposables.add(atom.project.onDidChangePaths(@init))
-        @watchers = new CompositeDisposable()
+
         @init()
 
+        mime.define({
+            "application/xquery": ["xq", "xql", "xquery", "xqm"]
+        })
+
     init: ->
-        @watchers.dispose()
+        @watchers.dispose() if @watchers?
         @watchers = new CompositeDisposable()
         dirs = atom.project.getDirectories()
         for dir in dirs
@@ -34,25 +40,34 @@ class Watch
                             self.watchDirectory(entry)
         )
 
-    fileChanged: (path) ->
-        project = @config.getProjectConfig(path)
-        relPath = path.substring(project.path.length)
-        console.log("file changed: %o", relPath)
-        url = project.config.server + "/rest/#{project.config.root}/#{relPath}"
-        console.log("upload url: %s", url)
-
-        #$.ajax
-        #    type: "PUT"
-        #    url: project.config.server + "/rest/#{project.config.root}/#{relPath}"
-        #    dataType: "json"
-        #    data: editor.getText()
-        #    headers:
-        #        "X-BasePath": basePath
-        #    contentType: "application/octet-stream"
-        #    username: self.projectConfig.getConfig(editor).user
-        #    password: self.projectConfig.getConfig(editor).password
-        #    success: (data) ->
+    fileChanged: (file) ->
+        project = @config.getProjectConfig(file)
+        relPath = file.substring(project.path.length)
+        url = "#{project.config.server}/rest/#{project.config.root}/#{relPath}"
+        contentType = mime.lookup(path.extname(file))
+        console.log("uploading changed file to: %s using type %s", url, contentType)
+        self = this
+        options =
+            uri: url
+            method: "PUT"
+            auth:
+                user: project.config.user
+                pass: project.config.password || ""
+                sendImmediately: true
+            headers:
+                "Content-Type": contentType
+        fs.createReadStream(file).pipe(
+            request(
+                options,
+                (error, response, body) ->
+                    if error?
+                        atom.notifications.addError("Failed to upload #{relPath}", detail: error)
+                    else
+                        atom.notifications.addSuccess("Uploaded #{relPath}: #{response.statusCode}.")
+            )
+        )
 
     dispose: () ->
+        console.log("disposing watchers ...")
         @watchers.dispose()
         @disposables.dispose()
