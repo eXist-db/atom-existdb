@@ -2,7 +2,7 @@ EXistSymbolsView = require './existdb-view'
 Config = require './project-config'
 {CompositeDisposable, Range} = require 'atom'
 Provider = require "./provider"
-Watch = require "./watch"
+Uploader = require "./uploader"
 path = require 'path'
 $ = require 'jquery'
 
@@ -33,7 +33,7 @@ module.exports = Existdb =
     projectConfig: null
     provider: undefined
     symbolsView: undefined
-    watch: undefined
+    uploader: undefined
 
     activate: (state) ->
         console.log "Activating eXistdb"
@@ -44,7 +44,7 @@ module.exports = Existdb =
 
         @symbolsView = new EXistSymbolsView(@projectConfig)
 
-        @watch = new Watch(@projectConfig)
+        @uploader = new Uploader(@projectConfig)
 
         # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
         @subscriptions = new CompositeDisposable
@@ -52,13 +52,12 @@ module.exports = Existdb =
         # Register command that toggles this view
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:run': => @run(atom.workspace.getActiveTextEditor())
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:file-symbols': => @gotoFileSymbol()
+        @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:upload': @uploader.upload
 
     deactivate: ->
         @projectConfig.destroy()
 
         @subscriptions.dispose()
-
-        @watch.dispose()
 
     serialize: ->
         #existdbViewState: @existdbView.serialize()

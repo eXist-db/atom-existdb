@@ -3,45 +3,44 @@ fs = require 'fs'
 request = require 'request'
 path = require 'path'
 mime = require 'mime'
-$ = require('jquery')
 
 module.exports =
-class Watch
+class Uploader
 
     @disposables: undefined
-    @watchers: undefined
 
     constructor: (@config) ->
-        @disposables = new CompositeDisposable()
-        @disposables.add(atom.project.onDidChangePaths(@init))
-
-        @init()
+        disposables = new CompositeDisposable()
 
         mime.define({
             "application/xquery": ["xq", "xql", "xquery", "xqm"]
         })
 
-    init: ->
-        @watchers.dispose() if @watchers?
-        @watchers = new CompositeDisposable()
-        dirs = atom.project.getDirectories()
-        for dir in dirs
-            @watchDirectory(dir)
-
-    watchDirectory: (dir) ->
         self = this
-        dir.getEntries((error, entries) ->
-            if not error?
-                for entry in entries
-                    do (entry) ->
-                        if entry.isFile()
-                            self.watchers.add(entry.onDidChange(() -> self.fileChanged(entry.getPath())))
-                        else
-                            self.watchDirectory(entry)
-        )
+        disposables.add(atom.workspace.observeTextEditors((editor) ->
+            onDidSave = editor.onDidSave((ev) ->
+                self.fileChanged(ev.path)
+            )
+            onDidDestroy = editor.onDidDestroy((ev) ->
+                disposables.remove(onDidSave)
+                disposables.remove(onDidDestroy)
+                onDidDestroy.dispose()
+                onDidSave.dispose()
+            )
 
-    fileChanged: (file) ->
+            disposables.add(onDidSave)
+            disposables.add(onDidDestroy)
+        ))
+
+    upload: =>
+        editor = atom.workspace.getActiveTextEditor()
+        @fileChanged(editor.getPath(), true)
+
+    fileChanged: (file, force = false) ->
         project = @config.getProjectConfig(file)
+        return unless project?.config.sync or force
+        return if @config.ignoreFile(file)
+
         relPath = file.substring(project.path.length)
         url = "#{project.config.server}/rest/#{project.config.root}/#{relPath}"
         contentType = mime.lookup(path.extname(file))
@@ -66,8 +65,3 @@ class Watch
                         atom.notifications.addSuccess("Uploaded #{relPath}: #{response.statusCode}.")
             )
         )
-
-    dispose: () ->
-        console.log("disposing watchers ...")
-        @watchers.dispose()
-        @disposables.dispose()

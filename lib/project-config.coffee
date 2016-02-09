@@ -1,6 +1,6 @@
-fs = require 'fs'
-path = require 'path'
 $ = require('jquery')
+fs = require 'fs'
+minimatch = require("minimatch")
 
 module.exports =
 class ProjectConfig
@@ -16,11 +16,13 @@ class ProjectConfig
         @configs = []
         for dir in paths
             if @isDirectory(dir)
+                path = require 'path'
                 configPath = path.resolve(dir, ".existdb.json")
                 if fs.existsSync(configPath)
                     contents = fs.readFileSync(configPath, 'utf8')
                     try
                         data = JSON.parse(contents)
+                        console.log("configuration file %s: %o", configPath, data)
                         fs.watchFile(configPath, (curr, prev) =>
                             @load([dir])
                         )
@@ -53,8 +55,17 @@ class ProjectConfig
             server: atom.config.get("existdb.server"),
             user: atom.config.get("existdb.user"),
             password: atom.config.get("existdb.password"),
-            root: atom.config.get("existdb.root")
+            root: atom.config.get("existdb.root"),
+            sync: false,
+            ignore: []
         }
+
+    ignoreFile: (file) ->
+        config = @getConfig(file)
+        for pattern in config.ignore
+            if minimatch(file, pattern, {matchBase: true, dot: true})
+                console.log("ignoring file %s", file)
+                return true
 
     isDirectory: (dir) ->
         try return fs.statSync(dir).isDirectory()

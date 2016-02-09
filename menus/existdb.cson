@@ -8,6 +8,10 @@
         {
           'label': 'File Symbols'
           'command': 'existdb:file-symbols'
+        },
+        {
+            'label': 'Upload Current File'
+            'command': 'existdb:upload'
         }
   ]
 'menu': [
@@ -23,6 +27,10 @@
         {
           'label': 'File Symbols'
           'command': 'existdb:file-symbols'
+        },
+        {
+            'label': 'Upload Current File'
+            'command': 'existdb:upload'
         }
       ]
     ]

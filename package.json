@@ -21,7 +21,8 @@
       "atom-space-pen-views": "^2.1.1",
       "jquery": "^2.2.0",
       "request": "latest",
-      "mime": "latest"
+      "mime": "latest",
+      "minimatch": "latest"
   },
   "package-dependencies": [
     "linter",
@@ -41,7 +42,7 @@
   },
   "coffeelintConfig": {
     "indentation" : {
-        "level" : "error",
+        "level" : "ignore",
         "value" : 4
     },
     "line_endings" : {
