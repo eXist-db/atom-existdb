@@ -8,7 +8,11 @@ Provides:
 
 ## Installation Instructions
 
-The package requires a small support app to be installed in the eXist-db instance you want to access, so you need to clone and build this first (requires apache ant):
+### Prerequisites
+
+If you have not done it yet, install the `language-jsoniq` package into Atom for XQuery support.
+
+The eXist-db package requires a small support app to be installed in the database instance you want to access, so you need to clone and build this first (requires apache ant):
 
 ```shell
 git clone https://github.com/wolfgangmm/atom-editor-support.git
@@ -17,6 +21,8 @@ ant
 ```
 
 This creates `atom-editor-0.1.xar` inside the `build/` directory. Deploy this into your eXist instance using the dashboard.
+
+### Installation
 
 Now clone the main package, cd into it and run `apm install` once. This creates a subdirectory `node_modules`. Next, call `apm link .` to register the package with Atom. The complete steps:
 
