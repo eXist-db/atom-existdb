@@ -23,12 +23,14 @@ class EXistSymbolsView extends SelectListView
         @focusFilterEditor()
 
     populate: (editor) ->
-        @getFileSymbols(editor)
-        @getImportedSymbols(editor)
+        scopes = editor.getRootScopeDescriptor().getScopesArray()
+        if scopes.indexOf("source.xq") > -1
+            @getFileSymbols(editor)
+            @getImportedSymbols(editor)
 
-        @storeFocusedElement()
-        @panel.show()
-        @focusFilterEditor()
+            @storeFocusedElement()
+            @panel.show()
+            @focusFilterEditor()
 
     viewForItem: ({name, signature, line, file, type}) ->
         $$ ->

@@ -9,7 +9,6 @@
       "xquery",
       "xml"
   ],
-  "activationHooks": ["language-jsoniq:grammar-used"],
   "repository": "https://github.com/wolfgangmm/atom-existdb",
   "license": "MIT",
   "engines": {

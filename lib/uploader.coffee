@@ -38,7 +38,7 @@ class Uploader
 
     fileChanged: (file, force = false) ->
         project = @config.getProjectConfig(file)
-        return unless project?.config.sync or force
+        return unless project? and (project?.config.sync or force)
         return if @config.ignoreFile(file)
 
         relPath = file.substring(project.path.length)
