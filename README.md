@@ -3,8 +3,8 @@
 Provides:
 
 * linting and autocomplete for XQuery scripts written for the eXist-db Native XML Database
-* execution of XQuery scripts within the editor (Ctrl-Enter)
-* symbols view to navigate to functions and variables in current editor (Meta-Shift-R)
+* execution of XQuery scripts within the editor (`Ctrl-Enter`)
+* symbols view to navigate to functions and variables in current editor (`Meta-Shift-R`)
 
 ## Installation Instructions
 
@@ -61,7 +61,7 @@ Whenever you change an XQuery file, its contents will be forwarded to eXist and 
 While you type, autocomplete will talk to the database to get a list of functions or variable names which may match what you just typed. This will show all functions visible in the current context, including globally defined functions or functions in imported modules.
 
 #### Navigating to functions and variables
-Press `Cmd-Shift-R` to see all functions and variables visible in the current context. Select one to navigate to it. This works across all files in the current project.
+Press `Meta-Shift-R` to see all functions and variables visible in the current context. Select one to navigate to it. This works across all files in the current project.
 
 #### Execute XQuery scripts
 You can send the XQuery code in the current editor to eXist for execution by pressing `Ctrl-Enter`. The result will be displayed in a new editor tab.

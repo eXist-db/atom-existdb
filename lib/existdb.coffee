@@ -111,6 +111,9 @@ module.exports = Existdb =
                 return @lintOpenFile(textEditor)
 
     lintOpenFile: (editor) ->
+        data = editor.getText()
+        return unless data.length > 0
+
         relativePath = atom.project.relativizePath(editor.getPath())[1]
         collection = path.dirname(relativePath)
         basePath = "xmldb:exist://" + @projectConfig.getConfig(editor).root + "/" + collection
@@ -120,7 +123,7 @@ module.exports = Existdb =
                 type: "PUT"
                 url: self.projectConfig.getConfig(editor).server + "/apps/atom-editor/compile.xql"
                 dataType: "json"
-                data: editor.getText()
+                data: data
                 headers:
                     "X-BasePath": basePath
                 contentType: "application/octet-stream"
