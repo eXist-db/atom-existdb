@@ -65,3 +65,7 @@ Press `Meta-Shift-R` to see all functions and variables visible in the current c
 
 #### Execute XQuery scripts
 You can send the XQuery code in the current editor to eXist for execution by pressing `Ctrl-Enter`. The result will be displayed in a new editor tab.
+
+## Limitations
+
+* Deleting, renaming, moving or copying a file via Atom's tree view or outside Atom will not apply that change to the database. You have to manually repeat the change inside eXist using eXide or the dashboard.
