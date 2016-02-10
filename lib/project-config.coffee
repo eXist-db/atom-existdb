@@ -46,9 +46,14 @@ class ProjectConfig
             path = context
         else
             path = context.getPath()
-        for config in @configs
-            if path.length >= config.path.length && path.substring(0, config.path.length) == config.path
-                return config
+        if path?
+            for config in @configs
+                if path.length >= config.path.length && path.substring(0, config.path.length) == config.path
+                    return config
+        else if @configs.length > 0
+            @configs[0]
+        else
+            getDefaults()
 
     getDefaults: () ->
         {
