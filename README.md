@@ -69,3 +69,8 @@ You can send the XQuery code in the current editor to eXist for execution by pre
 ## Limitations
 
 * Deleting, renaming, moving or copying a file via Atom's tree view or outside Atom will not apply that change to the database. You have to manually repeat the change inside eXist using eXide or the dashboard.
+
+## Todo
+
+* jump to the definition of a function, e.g. by shift-clicking on its name
+* add a command to force a sync for a single file or all files in a directory without having it open in the editor. This would also help to address the issue with deletions etc.
