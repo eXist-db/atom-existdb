@@ -7,8 +7,6 @@ mime = require 'mime'
 module.exports =
 class Uploader
 
-    @disposables: undefined
-
     constructor: (@config) ->
         disposables = new CompositeDisposable()
 

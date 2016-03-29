@@ -16,14 +16,19 @@
   },
   "dependencies": {
       "atom-linter": "latest",
-      "atom-package-dependencies": "latest",
+      "atom-package-deps": "latest",
       "atom-space-pen-views": "^2.1.1",
+      "event-kit": "latest",
       "jquery": "^2.2.0",
       "request": "latest",
       "mime": "latest",
-      "minimatch": "latest"
+      "minimatch": "latest",
+      "tmp": "latest",
+      "mkdirp": "latest",
+      "xqlint": "eXistSolutions/xqlint#exist-syntax",
+      "hyperclick": "latest"
   },
-  "package-dependencies": [
+  "package-deps": [
     "linter",
     "language-jsoniq"
   ],
@@ -37,6 +42,11 @@
         "versions": {
             "1.0.0": "provideLinter"
         }
+    },
+    "hyperclick.provider": {
+      "versions": {
+        "0.0.0": "provideHyperclick"
+      }
     }
   },
   "coffeelintConfig": {

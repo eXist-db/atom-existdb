@@ -12,6 +12,10 @@
         {
             'label': 'Upload Current File'
             'command': 'existdb:upload'
+        },
+        {
+            'label': 'Toggle Database View'
+            'command': 'existdb:toggle-tree-view'
         }
   ]
 'menu': [
@@ -31,6 +35,10 @@
         {
             'label': 'Upload Current File'
             'command': 'existdb:upload'
+        },
+        {
+            'label': 'Toggle Database View'
+            'command': 'existdb:toggle-tree-view'
         }
       ]
     ]

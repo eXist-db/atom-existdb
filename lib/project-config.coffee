@@ -12,7 +12,7 @@ class ProjectConfig
         @load(atom.project.getPaths())
         @disposables.push(atom.project.onDidChangePaths(@load))
 
-    load: (paths) ->
+    load: (paths) =>
         @configs = []
         for dir in paths
             if @isDirectory(dir)
@@ -44,7 +44,7 @@ class ProjectConfig
     getProjectConfig: (context) ->
         if typeof context == "string"
             path = context
-        else
+        else if context?
             path = context.getPath()
         if path?
             for config in @configs

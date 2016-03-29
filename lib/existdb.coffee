@@ -1,10 +1,13 @@
 EXistSymbolsView = require './existdb-view'
+EXistTreeView = require './existdb-tree-view'
 Config = require './project-config'
 {CompositeDisposable, Range} = require 'atom'
 Provider = require "./provider"
 Uploader = require "./uploader"
-path = require 'path'
+util = require "./util"
+_path = require 'path'
 $ = require 'jquery'
+XQUtils = require './xquery-helper'
 
 COMPILE_MSG_RE = /.*line:?\s(\d+)/i
 
@@ -22,27 +25,28 @@ module.exports = Existdb =
             default: ''
         root:
             title: 'Root collection'
-            description: """The root collection to resolve relative paths against.
+            description: """The root collection to resolve relative paths against when
+                working on a local app directory.
                 Set this to the app root if you are working on an application package,
                 e.g. /db/apps/test-app."""
             type: 'string'
             default: '/db'
-    existdbView: null
-    modalPanel: null
     subscriptions: null
     projectConfig: null
     provider: undefined
     symbolsView: undefined
     uploader: undefined
+    treeView: undefined
 
-    activate: (state) ->
+    activate: (@state) ->
         console.log "Activating eXistdb"
-
         @projectConfig = new Config()
+
+        @treeView = new EXistTreeView(@state, @projectConfig)
 
         @provider = new Provider(@projectConfig)
 
-        @symbolsView = new EXistSymbolsView(@projectConfig)
+        @symbolsView = new EXistSymbolsView(@projectConfig, @)
 
         @uploader = new Uploader(@projectConfig)
 
@@ -53,23 +57,26 @@ module.exports = Existdb =
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:run': => @run(atom.workspace.getActiveTextEditor())
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:file-symbols': => @gotoFileSymbol()
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:upload': @uploader.upload
+        @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:toggle-tree-view': => @treeView.toggle()
 
     deactivate: ->
         @projectConfig.destroy()
-
         @subscriptions.dispose()
+        @symbolsView.destroy()
+        @treeView.destroy()
 
     serialize: ->
-        #existdbViewState: @existdbView.serialize()
+        if @treeView?
+            @treeView.serialize()
+        else
+            @state
 
     gotoFileSymbol: ->
         editor = atom.workspace.getActiveTextEditor()
         @symbolsView.populate(editor)
 
     run: (editor) ->
-        relativePath = atom.project.relativizePath(editor.getPath())[1]
-        collection = path.dirname(relativePath)
-        basePath = "xmldb:exist://#{@projectConfig.getConfig(editor).root}/#{collection}"
+        collectionPaths = util.getCollectionPaths(editor, @projectConfig)
         self = this
         notifTimeout =
             setTimeout(
@@ -80,7 +87,7 @@ module.exports = Existdb =
             type: "POST"
             url: self.projectConfig.getConfig(editor).server + "/apps/atom-editor/execute"
             dataType: "text"
-            data: { "qu": editor.getText(), "base": basePath, "output": "adaptive" }
+            data: { "qu": editor.getText(), "base": collectionPaths.basePath, "output": "adaptive" }
             username: self.projectConfig.getConfig(editor).user
             password: self.projectConfig.getConfig(editor).password
             success: (data, status, xhr) ->
@@ -98,8 +105,77 @@ module.exports = Existdb =
                 atom.notifications.addError("Query execution failed: #{status}",
                     { detail: xhr.responseText, dismissable: true })
 
+    gotoDefinition: (signature, editor) ->
+        if @gotoLocalDefinition(signature, editor)
+            return
+
+        params = util.modules(@projectConfig, editor, false)
+        config = @projectConfig.getConfig(editor)
+        self = this
+        $.ajax
+            url: config.server +
+                "/apps/atom-editor/atom-autocomplete.xql?signature=" + encodeURIComponent(signature) + "&" +
+                    params.join("&")
+            username: config.user
+            password: config.password
+            success: (data) ->
+                for item in data
+                    if item.name == signature
+                        path = item.path
+                        if path.indexOf("xmldb:exist://") == 0
+                            path = path.substring(path.indexOf("/db"))
+                        self.open(editor, path, (newEditor) ->
+                            self.gotoLocalDefinition(signature, newEditor)
+                        )
+                        return
+
+    gotoLocalDefinition: (signature, editor) ->
+        for item in util.parseLocalFunctions(editor)
+            if item.name == signature
+                editor.scrollToBufferPosition([item.line, 0])
+                editor.setCursorBufferPosition([item.line, 0])
+                return true
+        false
+
+    open: (editor, uri, onOpen) ->
+        if editor.getBuffer()._remote?
+            if uri.indexOf("xmldb:exist://") == 0
+                uri = uri.substring(uri.indexOf("/db"))
+            @treeView.open(path: uri, onOpen)
+        else
+            rootCol = "#{@projectConfig.getConfig(editor).root}/"
+            xmldbRoot = "xmldb:exist://#{rootCol}"
+            if uri.indexOf(xmldbRoot) is 0
+                uri = uri.substring(xmldbRoot.length)
+            else if uri.indexOf(rootCol) is 0
+                uri = uri.substring(rootCol.length)
+                projectPath = atom.project.relativizePath(editor.getPath())[0]
+                uri = _path.resolve(projectPath, uri)
+
+            console.log("opening file: %s", uri)
+            promise = atom.workspace.open(uri)
+            promise.then((newEditor) -> onOpen?(newEditor))
+
     provide: ->
         return @provider
+
+    provideHyperclick: ->
+        self = this
+        providerName: 'hyperclick-xquery'
+        getSuggestionForWord: (editor, text, range) ->
+            scopes = editor.getRootScopeDescriptor().getScopesArray()
+            if scopes.indexOf("source.xq") > -1
+                ast = editor.getBuffer()._ast
+                return unless ast?
+                node = XQUtils.findNode(ast, { line: range.start.row, col: range.end.column })
+                if node?
+                    parent = XQUtils.getAncestor("FunctionCall", node)
+                    if parent?
+                        signature = XQUtils.getFunctionSignature(parent)
+                        if signature?
+                            console.log("hyperclick: %s", signature.name + '#' + signature.arity)
+                            range: new Range([parent.pos.sl, parent.pos.sc], [parent.pos.el, parent.pos.ec])
+                            callback: -> self.gotoDefinition("#{signature.name}##{signature.arity}", editor)
 
     provideLinter: ->
         provider =
@@ -111,25 +187,25 @@ module.exports = Existdb =
                 return @lintOpenFile(textEditor)
 
     lintOpenFile: (editor) ->
-        data = editor.getText()
-        return unless data.length > 0
+        text = editor.getText()
+        return [] unless text.length > 0 and @projectConfig
 
-        relativePath = atom.project.relativizePath(editor.getPath())[1]
-        collection = path.dirname(relativePath)
-        basePath = "xmldb:exist://" + @projectConfig.getConfig(editor).root + "/" + collection
+        collectionPaths = util.getCollectionPaths(editor, @projectConfig)
         self = this
         return new Promise (resolve) ->
             $.ajax
                 type: "PUT"
                 url: self.projectConfig.getConfig(editor).server + "/apps/atom-editor/compile.xql"
                 dataType: "json"
-                data: data
+                data: text
                 headers:
-                    "X-BasePath": basePath
+                    "X-BasePath": collectionPaths.basePath
                 contentType: "application/octet-stream"
                 username: self.projectConfig.getConfig(editor).user
                 password: self.projectConfig.getConfig(editor).password
                 success: (data) ->
+                    messages = []
+
                     if data.result == "fail"
                         error = self.parseErrMsg(data.error)
                         range = null
@@ -145,9 +221,19 @@ module.exports = Existdb =
                             range: range,
                             filePath: editor.getPath()
                         }
-                        resolve([message])
-                    else
-                        resolve([])
+                        messages.push(message)
+
+                    xqlint = XQUtils.xqlint(editor)
+                    markers = xqlint.getWarnings()
+                    for marker in markers when marker.type != "error"
+                        message = {
+                            type: marker.type
+                            text: marker.message
+                            range: new Range([marker.pos.sl, marker.pos.sc], [marker.pos.el, marker.pos.ec])
+                            filePath: editor.getPath()
+                        }
+                        messages.push(message)
+                    resolve(messages)
 
     parseErrMsg: (error) ->
         if error.line?
