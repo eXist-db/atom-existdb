@@ -53,17 +53,15 @@ class ProjectConfig
         else if @configs.length > 0
             @configs[0]
         else
-            getDefaults()
+            null
 
     getDefaults: () ->
-        {
-            server: atom.config.get("existdb.server"),
-            user: atom.config.get("existdb.user"),
-            password: atom.config.get("existdb.password"),
-            root: atom.config.get("existdb.root"),
-            sync: false,
-            ignore: []
-        }
+        server: atom.config.get("existdb.server")
+        user: atom.config.get("existdb.user")
+        password: atom.config.get("existdb.password")
+        root: atom.config.get("existdb.root")
+        sync: false
+        ignore: []
 
     ignoreFile: (file) ->
         config = @getConfig(file)
