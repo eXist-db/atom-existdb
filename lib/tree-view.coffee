@@ -3,22 +3,22 @@
 
 module.exports =
   TreeNode: class TreeNode extends View
-    @content: ({label, icon, loaded, children}) ->
+    @content: ({label, icon, loaded, children, type}) ->
       if children
         @li class: 'list-nested-item list-selectable-item collapsed', =>
           @div class: 'list-item', =>
-            @span class: "icon #{icon}", label
+            @span class: "icon #{icon} #{type}", label
           @ul class: 'list-tree', outlet: 'children', =>
             for child in children
               @subview 'child', new TreeNode(child)
       else if not loaded
         @li class: 'list-nested-item list-selectable-item collapsed', =>
             @div class: 'list-item', =>
-                @span class: "icon #{icon}", label
+                @span class: "icon #{icon} #{type}", label
             @ul class: 'list-tree', outlet: 'children'
       else
           @li class: 'list-item list-selectable-item', =>
-              @span class: "icon #{icon}", label
+              @span class: "icon #{icon} #{type}", label
 
     initialize: (item) ->
       @emitter = new Emitter
@@ -29,11 +29,18 @@ module.exports =
       @on 'click', @clickItem
 
     setChildren: (children) ->
+        @children.empty()
         @item.children = children
         content = $$ ->
             @div =>
                 for child in children
                     @subview 'child', new TreeNode(child)
+        @children.append(content.children())
+
+    addChild: (child) ->
+        @item.children.push(child)
+        content = $$ ->
+            @div => @subview 'child', new TreeNode(child)
         @children.append(content.children())
 
     setCollapsed: ->

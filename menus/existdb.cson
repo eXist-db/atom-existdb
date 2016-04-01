@@ -17,7 +17,23 @@
             'label': 'Toggle Database View'
             'command': 'existdb:toggle-tree-view'
         }
-  ]
+    ],
+    '.existdb-tree .collection': [
+        {
+            'label': 'Refresh'
+            'command': 'existdb:reload-tree-view'
+        },
+        {
+            'label': 'New Resource'
+            'command': 'existdb:new-file'
+        }
+    ],
+    '.existdb-tree .resource': [
+        {
+            'label': 'Remove'
+            'command': 'existdb:remove-file'
+        }
+    ]
 'menu': [
   {
     'label': 'Packages'

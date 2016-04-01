@@ -45,6 +45,14 @@ module.exports =
             @treeView.width(@state.width) if @state?.width
             @toggle() if @state?.show
 
+            @disposables.add atom.commands.add 'atom-workspace', 'existdb:reindex': @reindex
+            @disposables.add atom.commands.add 'atom-workspace', 'existdb:reload-tree-view':
+                (ev) => @load(ev.target.spacePenView.item)
+            @disposables.add atom.commands.add 'atom-workspace', 'existdb:new-file':
+                (ev) => @newFile(ev.target.spacePenView, 'unknown.xql')
+            @disposables.add atom.commands.add 'atom-workspace', 'existdb:remove-file':
+                (ev) => @removeFile(ev.target.spacePenView)
+
         serialize: ->
             width: @treeView.width()
             show: @hasParent()
@@ -61,6 +69,7 @@ module.exports =
             @load(root)
 
         load: (item, callback) =>
+            console.log("Loading collection contents for item #{item.path}")
             self = this
             editor = atom.workspace.getActiveTextEditor()
             url = @config.getConfig(editor).server +
@@ -85,7 +94,62 @@ module.exports =
                         callback() if callback
             )
 
+        removeFile: (parentView) =>
+            resource = parentView.item
+            editor = atom.workspace.getActiveTextEditor()
+            url = "#{@config.getConfig(editor).server}/rest/#{resource.path}"
+            options =
+                uri: url
+                method: "DELETE"
+                auth:
+                    user: @config.getConfig(editor).user
+                    pass: @config.getConfig(editor).password || ""
+                    sendImmediately: true
+            request(
+                options,
+                (error, response, body) ->
+                    if error?
+                        atom.notifications.addError("Failed to delete #{resource.path}", detail: if response? then response.statusMessage else error)
+                    else
+                        atom.notifications.addSuccess("#{resource.path} deleted")
+            )
+
+        newFile: (parentView, name) =>
+            self = this
+            collection = parentView.item.path
+            resource =
+                path: "#{collection}/#{name}"
+                type: "resource"
+                icon: "icon-file-text"
+                label: name
+                loaded: true
+            tmpDir = @getTempDir(resource.path)
+            tmpFile = path.join(tmpDir, path.basename(resource.path))
+
+            promise = atom.workspace.open(null)
+            promise.then((newEditor) ->
+                parentView.addChild(resource)
+                buffer = newEditor.getBuffer()
+                buffer.getPath = () -> resource.path
+                buffer.setPath(tmpFile)
+                resource.editor = newEditor
+                buffer._remote = resource
+                onDidSave = buffer.onDidSave((ev) ->
+                    self.save(tmpFile, resource, mime.lookup(resource.path))
+                )
+                onDidDestroy = buffer.onDidDestroy((ev) ->
+                    self.disposables.remove(onDidSave)
+                    self.disposables.remove(onDidDestroy)
+                    onDidDestroy.dispose()
+                    onDidSave.dispose()
+                    fs.unlink(tmpFile)
+                )
+                self.disposables.add(onDidSave)
+                self.disposables.add(onDidDestroy)
+            )
+
         open: (resource, onOpen) =>
+            # switch to existing editor if resource is already open
             pane = atom.workspace.paneForURI(resource.path)
             if pane?
                 pane.activateItemForURI(resource.path)
@@ -172,6 +236,9 @@ module.exports =
                 )
             )
 
+        reindex: (ev) ->
+            console.log("reindex %s", ev.target.spacePenView.item.path)
+
         onSelect: ({node, item}) =>
             if not item.loaded
                 @load(item, () ->
@@ -186,7 +253,7 @@ module.exports =
             @disposables.dispose()
             @tempDir.removeCallback() if @tempDir
 
-        attach: ->
+        attach: =>
             if (atom.config.get('tree-view.showOnRightSide'))
                 @panel = atom.workspace.addLeftPanel(item: this)
             else
