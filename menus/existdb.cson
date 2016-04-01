@@ -26,12 +26,20 @@
         {
             'label': 'New Resource'
             'command': 'existdb:new-file'
+        },
+        {
+            'label': 'New Collection'
+            'command': 'existdb:new-collection'
+        },
+        {
+            'label': 'Remove'
+            'command': 'existdb:remove-resource'
         }
     ],
     '.existdb-tree .resource': [
         {
             'label': 'Remove'
-            'command': 'existdb:remove-file'
+            'command': 'existdb:remove-resource'
         }
     ]
 'menu': [

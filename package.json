@@ -3,6 +3,11 @@
   "main": "./lib/existdb",
   "version": "0.0.1",
   "description": "Linting and autocomplete for XQuery scripts written for the eXist-db Native XML Database.",
+  "author": {
+    "name": "Wolfgang Meier",
+    "email": "wolfgang@existsolutions.com",
+    "url": "http://github.com/wolfgangmm"
+  },
   "keywords": [
       "xmldb",
       "eXist-db",

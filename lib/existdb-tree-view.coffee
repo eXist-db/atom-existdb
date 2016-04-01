@@ -1,6 +1,7 @@
 {$, jQuery, View} = require "atom-space-pen-views"
 {TreeView} = require "./tree-view"
 XQUtils = require './xquery-helper'
+Dialog = require './dialog'
 request = require 'request'
 path = require 'path'
 fs = require 'fs'
@@ -24,8 +25,9 @@ module.exports =
 
             atom.workspace.observeTextEditors((editor) =>
                 buffer = editor.getBuffer()
-                p = buffer.getPath()
-                if /^\/db\/.*/.test(p) and not buffer._remote?
+                p = buffer.getId()
+                if /^xmldb:exist:\/\/\/db\/.*/.test(p) and not buffer._remote?
+                    p = p.substring(14)
                     console.log("Reopen %s from database", p)
                     editor.destroy()
                     @open(path: p, buffer)
@@ -50,8 +52,8 @@ module.exports =
                 (ev) => @load(ev.target.spacePenView.item)
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:new-file':
                 (ev) => @newFile(ev.target.spacePenView, 'unknown.xql')
-            @disposables.add atom.commands.add 'atom-workspace', 'existdb:remove-file':
-                (ev) => @removeFile(ev.target.spacePenView)
+            @disposables.add atom.commands.add 'atom-workspace', 'existdb:remove-resource':
+                (ev) => @removeResource(ev.target.spacePenView)
 
         serialize: ->
             width: @treeView.width()
@@ -94,27 +96,37 @@ module.exports =
                         callback() if callback
             )
 
-        removeFile: (parentView) =>
+        removeResource: (parentView) =>
             resource = parentView.item
-            editor = atom.workspace.getActiveTextEditor()
-            url = "#{@config.getConfig(editor).server}/rest/#{resource.path}"
-            options =
-                uri: url
-                method: "DELETE"
-                auth:
-                    user: @config.getConfig(editor).user
-                    pass: @config.getConfig(editor).password || ""
-                    sendImmediately: true
-            request(
-                options,
-                (error, response, body) ->
-                    if error?
-                        atom.notifications.addError("Failed to delete #{resource.path}", detail: if response? then response.statusMessage else error)
-                    else
-                        atom.notifications.addSuccess("#{resource.path} deleted")
-            )
+            atom.confirm
+                message: "Delete resource?"
+                detailedMessage: "Are you sure you want to delete resource #{resource.path}?"
+                buttons:
+                    Yes: =>
+                        editor = atom.workspace.getActiveTextEditor()
+                        url = "#{@config.getConfig(editor).server}/rest/#{resource.path}"
+                        options =
+                            uri: url
+                            method: "DELETE"
+                            auth:
+                                user: @config.getConfig(editor).user
+                                pass: @config.getConfig(editor).password || ""
+                                sendImmediately: true
+                        request(
+                            options,
+                            (error, response, body) =>
+                                if error?
+                                    atom.notifications.addError("Failed to delete #{resource.path}", detail: if response? then response.statusMessage else error)
+                                else
+                                    atom.notifications.addSuccess("#{resource.path} deleted")
+                        )
+                    No: null
 
-        newFile: (parentView, name) =>
+        newFile: (parentView) =>
+            dialog = new Dialog("Enter a name for the new resource:", null, (name) => @createFile(parentView, name) if name?)
+            dialog.attach()
+
+        createFile: (parentView, name) ->
             self = this
             collection = parentView.item.path
             resource =
@@ -130,7 +142,7 @@ module.exports =
             promise.then((newEditor) ->
                 parentView.addChild(resource)
                 buffer = newEditor.getBuffer()
-                buffer.getPath = () -> resource.path
+                # buffer.getPath = () -> resource.path
                 buffer.setPath(tmpFile)
                 resource.editor = newEditor
                 buffer._remote = resource
@@ -182,8 +194,9 @@ module.exports =
                     promise = atom.workspace.open(null)
                     promise.then((newEditor) ->
                         buffer = newEditor.getBuffer()
-                        buffer.getPath = () -> resource.path
+                        # buffer.getPath = () -> resource.path
                         buffer.setPath(tmpFile)
+                        buffer.getId = () -> "xmldb:exist://#{resource.path}"
                         buffer.loadSync()
                         resource.editor = newEditor
                         buffer._remote = resource
