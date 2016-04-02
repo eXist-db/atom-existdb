@@ -51,7 +51,9 @@ module.exports =
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:reload-tree-view':
                 (ev) => @load(ev.target.spacePenView.item)
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:new-file':
-                (ev) => @newFile(ev.target.spacePenView, 'unknown.xql')
+                (ev) => @newFile(ev.target.spacePenView)
+            @disposables.add atom.commands.add 'atom-workspace', 'existdb:new-collection':
+                (ev) => @newCollection(ev.target.spacePenView)
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:remove-resource':
                 (ev) => @removeResource(ev.target.spacePenView)
 
@@ -64,6 +66,7 @@ module.exports =
                 label: "db",
                 path: "/db",
                 icon: "icon-database",
+                type: "collection",
                 children: [],
                 loaded: true
             }
@@ -124,6 +127,31 @@ module.exports =
 
         newFile: (parentView) =>
             dialog = new Dialog("Enter a name for the new resource:", null, (name) => @createFile(parentView, name) if name?)
+            dialog.attach()
+
+        newCollection: (parentView) =>
+            parent = parentView.item.path
+            editor = atom.workspace.getActiveTextEditor()
+            dialog = new Dialog("Enter a name for the new collection:", null, (name) =>
+                if name?
+                    query = "xmldb:create-collection('#{parent}', '#{name}')"
+                    url = "#{@config.getConfig(editor).server}/rest/#{parent}?_query=#{query}"
+                    options =
+                        uri: url
+                        method: "GET"
+                        auth:
+                            user: @config.getConfig(editor).user
+                            pass: @config.getConfig(editor).password || ""
+                            sendImmediately: true
+                    request(
+                        options,
+                        (error, response, body) =>
+                            if error?
+                                atom.notifications.addError("Failed to create collection #{parent}/#{name}", detail: if response? then response.statusMessage else error)
+                            else
+                                atom.notifications.addSuccess("Collection #{parent}/#{name} created")
+                    )
+            )
             dialog.attach()
 
         createFile: (parentView, name) ->
