@@ -67,6 +67,10 @@
         {
             'label': 'Toggle Database View'
             'command': 'existdb:toggle-tree-view'
+        },
+        {
+            'label': 'Reconnect'
+            'command': 'existdb:reconnect'
         }
       ]
     ]

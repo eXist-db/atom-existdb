@@ -17,10 +17,10 @@
     'ctrl-enter': 'existdb:run'
     'ctrl-alt-r': 'existdb:file-symbols'
     'ctrl-alt-e': 'existdb:toggle-tree-view'
-    'ctrl-alt-e': 'existdb:goto-definition'
+    'ctrl-alt-g': 'existdb:goto-definition'
 
 '.platform-windows atom-workspace':
     'ctrl-enter': 'existdb:run'
     'ctrl-alt-r': 'existdb:file-symbols'
     'ctrl-alt-e': 'existdb:toggle-tree-view'
-    'ctrl-alt-e': 'existdb:goto-definition'
+    'ctrl-alt-g': 'existdb:goto-definition'
