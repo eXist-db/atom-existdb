@@ -10,7 +10,7 @@ This package contains a set of views and providers to support XQuery development
 * execution of XQuery scripts within the editor
 * symbols view to navigate to functions and variables which are in scope for the current XQuery
 
-![First steps](basic.gif)
+![First steps](https://raw.githubusercontent.com/wolfgangmm/atom-existdb/master/basic.gif)
 
 ## Dependencies
 
@@ -65,7 +65,7 @@ Whenever you change an XQuery file, its contents will be forwarded to eXist and 
 In addition to server-side compilation, xqlint will be called in the background to provide hints and alerts for the currently open file. The eXistdb package combines those with the feedback coming from the eXist server.
 
 #### Navigate to a function definition
-The package includes a provider for *hyperclick*: keep the `alt` or `command` key pressed while moving the mouse over a function call and it should be highlighted. Clicking on the highlighted range should navigate to the definition of the function, given that the source location of the corresponding XQuery module is known to the XQuery engine (obviously it won't work for the standard Java modules compiled into eXist). If the declaration of the function resides in a different file, it will be opened in a new editor tab.
+The package includes a provider for *hyperclick*: keep the `ctrl` or `command` key pressed while moving the mouse over a function call and it should be highlighted. Clicking on the highlighted range should navigate to the definition of the function, given that the source location of the corresponding XQuery module is known to the XQuery engine (obviously it won't work for the standard Java modules compiled into eXist). If the declaration of the function resides in a different file, it will be opened in a new editor tab.
 
 Just in case hyperclick doesn't work for you: place the cursor inside a function call and press `cmd-alt-g` or `ctrl-alt-g`.
 
@@ -77,7 +77,7 @@ Type a few characters to limit the list to functions or variable containing that
 #### Execute XQuery scripts
 You can send the XQuery code in the current editor to eXist for execution by pressing `Ctrl-Enter` (on all systems). The result will be displayed in a new editor tab. Obviously this will only work for XQuery main modules.
 
-![First steps](run.gif)
+![Executing query](https://raw.githubusercontent.com/wolfgangmm/atom-existdb/master/run.gif)
 
 ## Development
 
