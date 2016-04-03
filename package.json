@@ -35,7 +35,7 @@
   },
   "package-deps": [
     "linter",
-    "language-jsoniq"
+    "hyperclick"
   ],
   "providedServices": {
     "autocomplete.provider": {
