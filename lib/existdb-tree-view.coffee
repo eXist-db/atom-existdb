@@ -43,6 +43,10 @@ module.exports =
 
             atom.config.observe 'existdb-tree-view.scrollAnimation', (enabled) =>
                 @animationDuration = if enabled then 300 else 0
+            atom.config.onDidChange('existdb.server', (ev) => @checkServer(() => @populate()))
+            atom.config.onDidChange('existdb.user', (ev) => @checkServer(() => @populate()))
+            atom.config.onDidChange('existdb.password', (ev) => @checkServer(() => @populate()))
+            atom.config.onDidChange('existdb.root', (ev) => @checkServer(() => @populate()))
 
             @treeView.width(@state.width) if @state?.width
             @toggle() if @state?.show
@@ -76,7 +80,7 @@ module.exports =
             @checkServer(() => @load(root))
 
         load: (item, callback) =>
-            console.log("Loading collection contents for item #{item.path}")
+            console.log("Loading collection contents for item #{item.path} using server #{@config.getConfig(editor).server}")
             self = this
             editor = atom.workspace.getActiveTextEditor()
             url = @config.getConfig(editor).server +
