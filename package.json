@@ -1,7 +1,7 @@
 {
   "name": "existdb",
   "main": "./lib/existdb",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "description": "Database browser with linting, autocomplete and hyperclick navigation for XQuery scripts written for the eXist-db Native XML Database (http://exist-db.org).",
   "author": {
     "name": "Wolfgang Meier",
@@ -9,32 +9,32 @@
     "url": "http://github.com/wolfgangmm"
   },
   "keywords": [
-      "xmldb",
-      "eXist-db",
-      "xquery",
-      "xml"
+    "xmldb",
+    "eXist-db",
+    "xquery",
+    "xml"
   ],
   "repository": "https://github.com/wolfgangmm/atom-existdb",
   "bugs": {
-      "url": "https://github.com/wolfgangmm/atom-existdb/issues"
+    "url": "https://github.com/wolfgangmm/atom-existdb/issues"
   },
   "license": "MIT",
   "engines": {
     "atom": ">=1.0.0 <2.0.0"
   },
   "dependencies": {
-      "atom-linter": "latest",
-      "atom-package-deps": "latest",
-      "atom-space-pen-views": "^2.1.1",
-      "event-kit": "latest",
-      "jquery": "^2.2.0",
-      "request": "latest",
-      "mime": "latest",
-      "minimatch": "latest",
-      "tmp": "latest",
-      "mkdirp": "latest",
-      "xqlint": "git://github.com/eXistSolutions/xqlint.git#exist-syntax",
-      "hyperclick": "latest"
+    "atom-linter": "latest",
+    "atom-package-deps": "latest",
+    "atom-space-pen-views": "^2.1.1",
+    "event-kit": "latest",
+    "jquery": "^2.2.0",
+    "request": "latest",
+    "mime": "latest",
+    "minimatch": "latest",
+    "tmp": "latest",
+    "mkdirp": "latest",
+    "xqlint": "git://github.com/eXistSolutions/xqlint.git#exist-syntax",
+    "hyperclick": "latest"
   },
   "package-deps": [
     "linter",
@@ -42,14 +42,14 @@
   ],
   "providedServices": {
     "autocomplete.provider": {
-        "versions": {
-            "2.0.0": "provide"
-        }
+      "versions": {
+        "2.0.0": "provide"
+      }
     },
     "linter": {
-        "versions": {
-            "1.0.0": "provideLinter"
-        }
+      "versions": {
+        "1.0.0": "provideLinter"
+      }
     },
     "hyperclick.provider": {
       "versions": {
@@ -58,17 +58,17 @@
     }
   },
   "coffeelintConfig": {
-    "indentation" : {
-        "level" : "ignore",
-        "value" : 4
+    "indentation": {
+      "level": "ignore",
+      "value": 4
     },
-    "line_endings" : {
-        "value" : "unix",
-        "level" : "error"
+    "line_endings": {
+      "value": "unix",
+      "level": "error"
     },
     "max_line_length": {
-        "name": "max_line_length",
-        "level": "ignore"
+      "name": "max_line_length",
+      "level": "ignore"
     }
   }
 }
