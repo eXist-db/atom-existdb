@@ -57,6 +57,7 @@ module.exports =
                 (ev) => @newCollection(ev.target.spacePenView)
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:remove-resource':
                 (ev) => @removeResource(ev.target.spacePenView)
+            @disposables.add atom.commands.add 'atom-workspace', 'existdb:reconnect': => @checkServer(() => @populate())
 
         serialize: ->
             width: @treeView.width()
@@ -72,7 +73,7 @@ module.exports =
                 loaded: true
             }
             @treeView.setRoot(root, false)
-            @load(root)
+            @checkServer(() => @load(root))
 
         load: (item, callback) =>
             console.log("Loading collection contents for item #{item.path}")
@@ -351,4 +352,29 @@ module.exports =
                         onError?(error, response)
                     else
                         onSuccess?(body)
+            )
+
+        checkServer: (onSuccess) =>
+            query = "'http://exist-db.org/apps/atom-editor' = repo:list()"
+            @runQuery(query,
+                (error, response) ->
+                    atom.notifications.addWarning("Failed to access database", detail: if response? then response.statusMessage else error)
+                (body) =>
+                    if body
+                        onSuccess?()
+                    else
+                        console.log("server-side support app is not installed")
+                        atom.confirm
+                            message: "Install server-side support app?"
+                            detailedMessage: "This package requires a small support app to be installed on the eXistdb server. Do you want to install it?"
+                            buttons:
+                                Yes: =>
+                                    query = "repo:install-and-deploy('http://exist-db.org/apps/atom-editor', 'http://demo.exist-db.org/exist/apps/public-repo/modules/find.xql')"
+                                    @runQuery(query,
+                                        (error, response) ->
+                                            atom.notifications.addError("Failed to install support app", detail: if response? then response.statusMessage else error)
+                                        (body) ->
+                                            onSuccess?()
+                                    )
+                                No: -> null
             )

@@ -47,8 +47,6 @@ module.exports = Existdb =
 
         @treeView = new EXistTreeView(@state, @projectConfig)
 
-        @checkServer(@treeView, () => @treeView.populate())
-
         @provider = new Provider(@projectConfig)
 
         @symbolsView = new EXistSymbolsView(@projectConfig, @)
@@ -63,7 +61,6 @@ module.exports = Existdb =
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:file-symbols': => @gotoFileSymbol()
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:upload': @uploader.upload
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:toggle-tree-view': => @treeView.toggle()
-        @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:reconnect': => @checkServer(@treeView, () => @treeView.populate())
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:goto-definition': =>
             editor = atom.workspace.getActiveTextEditor()
             def = @getFunctionDefinition(editor, editor.getCursorBufferPosition())
@@ -102,7 +99,7 @@ module.exports = Existdb =
             password: self.projectConfig.getConfig(editor).password
             success: (data, status, xhr) ->
                 clearTimeout(notifTimeout)
-                promise = atom.workspace.open(null, { split: "left" })
+                promise = atom.workspace.open(null, split: "right")
                 promise.then((newEditor) ->
                     grammar = atom.grammars.grammarForScopeName("text.xml")
                     newEditor.setGrammar(grammar)
@@ -258,27 +255,3 @@ module.exports = Existdb =
 
         column = error.column || 0
         return { line: line, column: parseInt(column), msg: msg }
-
-    checkServer: (treeView, onSuccess) ->
-        query = "'http://exist-db.org/apps/atom-editor' = repo:list()"
-        treeView.runQuery(query,
-            (error, response) ->
-                atom.notifications.addError("Failed to access database", detail: if response? then response.statusMessage else error)
-            (body) ->
-                if body?
-                    onSuccess?()
-                else
-                    atom.confirm
-                        message: "Install server-side support app?"
-                        detailedMessage: "This package requires a small support app to be installed on the eXistdb server. Do you want to install it?"
-                        buttons:
-                            Yes: ->
-                                query = "repo:install-and-deploy('http://exist-db.org/apps/atom-editor', 'http://demo.exist-db.org/exist/apps/public-repo/modules/find.xql')"
-                                treeView.runQuery(query,
-                                    (error, response) ->
-                                        atom.notifications.addError("Failed to install support app", detail: if response? then response.statusMessage else error)
-                                    (body) ->
-                                        onSuccess?()
-                                )
-                            No: -> null
-        )
