@@ -33,7 +33,7 @@
       "minimatch": "latest",
       "tmp": "latest",
       "mkdirp": "latest",
-      "xqlint": "eXistSolutions/xqlint#exist-syntax",
+      "xqlint": "git://github.com/eXistSolutions/xqlint.git#exist-syntax",
       "hyperclick": "latest"
   },
   "package-deps": [
