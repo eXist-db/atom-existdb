@@ -1,30 +1,85 @@
 # Atom editor package for eXistdb
 
-Provides:
+This package contains a set of views and providers to support XQuery development using the [eXistdb Native XML Database](http://exist-db.org). In particular, the features are:
 
-* linting and autocomplete for XQuery scripts written for the eXist-db Native XML Database
-* execution of XQuery scripts within the editor (`Ctrl-Enter`)
-* symbols view to navigate to functions and variables in current editor (`Meta-Shift-R`)
+* tree view to browse the contents of the database
+* open, edit and save files stored remotely in the database
+* syntax highlighting and linting of XQuery scripts (based on [xqlint](https://github.com/wcandillon/xqlint))
+* autocomplete showing all functions and variables which are in scope, including those from imported modules
+* a hyperclick provider to navigate to the definition of a function, even if located in an imported module
+* execution of XQuery scripts within the editor
+* symbols view to navigate to functions and variables which are in scope for the current XQuery
 
-## Installation Instructions
+## Dependencies
 
-### Prerequisites
+The eXistdb package requires a small support app to be installed in the database instance you want to access. You should be asked if you would like to install the support app the first time the package is activated. If this fails for any reason, install it manually by going to the eXistdb dashboard. In the package manager, search for an app called *Server side support scripts for the Atom editor package* and install it.
 
-If you have not done it yet, install the `language-jsoniq` package into Atom for XQuery support.
+Linting and code navigation also depend on two Atom packages, which should be installed automatically unless they are already present:
 
-The eXist-db package requires a small support app to be installed in the database instance you want to access, so you need to clone and build this first (requires apache ant):
+1. linter
+2. hyperclick
 
-```shell
-git clone https://github.com/wolfgangmm/atom-editor-support.git
-cd atom-editor-support
-ant
-```
+## Usage
 
-This creates `atom-editor-0.1.xar` inside the `build/` directory. Deploy this into your eXist instance using the dashboard.
+### Introduction
 
-### Installation
+The package supports two different workflows for developing with eXist:
 
-Now clone the main package, cd into it and run `apm install` once. This creates a subdirectory `node_modules`. Next, call `apm link .` to register the package with Atom. The complete steps:
+1. directly work on the files stored *inside* the database, i.e. all development is done in eXist
+2. Atom is called on a directory on the file system, which resembles an application stored in eXist. Editing is done in the directory but files are automatically synced to the database.
+
+Most eXist users will be familiar with the first approach because this is how the in-browser IDE, eXide, works. For the time being, we thus concentrate on the "everything inside the database" workflow (1). Support for this is well-tested while (2) is still under development.
+
+### Getting Started
+
+When activated the first time, the package tries to detect if it can connect to the eXist server and if the server-side support app is installed on the database instance. By default, the package assumes that eXist can be reached using the default URL: http://localhost:8080/exist, and the password for the admin user is empty.
+
+If you changed the default eXist configuration or would like to connect to a different instance, head to the package configuration page in Atom and change the settings for the server URI and user credentials accordingly. Afterwards, call the *Reconnect* command from the package menu in Atom.
+
+If the server-side support app is not installed on the selected server instance, you will be asked to install it. Just answer with "Yes" and the app will be installed automatically.
+
+Once the package is activated, you should see the database browser tree view on either the left or right side of the Atom editor window. If not, please select *Toggle Database View* from the package menu.
+
+Clicking on any resource in the database browser will open the remote file for editing in an Atom editor tab. Behind the scenes, the resource is downloaded and stored into a temporary directory. The connection with the remote resource is preserved though, so pressing save in the editor will reupload the changed content into the database. This should also work across restarts of Atom: the package detects if you had previously opened files stored in eXist and re-downloads them upon restart.
+
+A right-click on a resource or collection in the database browser opens a context menu from which one can
+
+* create new collections or resources
+* delete resources
+* reindex a collection
+
+For the time being, the context menu actions apply to one collection or resource only.
+
+### Features
+
+#### Autocomplete
+While you type, autocomplete will talk to the database to get a list of functions or variable names which are in scope and may match what you just typed. This includes all functions and variables which are visible to your current code.
+
+Concerning local variables, autocomplete looks at the XQuery syntax tree corresponding to the current position of the cursor to determine which variables would be in scope.
+
+#### Linting
+Whenever you change an XQuery file, its contents will be forwarded to eXist and any compile errors will pop up in the editor window. This will not only detect errors in the current file, but also issues in modules it imports.
+
+In addition to server-side compilation, xqlint will be called in the background to provide hints and alerts for the currently open file. The eXistdb package combines those with the feedback coming from the eXist server.
+
+#### Navigate to a function definition
+The package includes a provider for *hyperclick*: keep the `alt` or `command` key pressed while moving the mouse over a function call and it should be highlighted. Clicking on the highlighted range should navigate to the definition of the function, given that the source location of the corresponding XQuery module is known to the XQuery engine (obviously it won't work for the standard Java modules compiled into eXist). If the declaration of the function resides in a different file, it will be opened in a new editor tab.
+
+Just in case hyperclick doesn't work for you: place the cursor inside a function call and press `cmd-alt-g` or `ctrl-alt-g`.
+
+#### Symbol browser
+To quickly navigate to the definition of a function or variable, you can also use the symbol browser: press `cmd-ctrl-r` or `ctrl-alt-r` to get a popup showing all functions and variables which are visible to the code currently open in the editor.
+
+Type a few characters to limit the list to functions or variable containing that string sequence. Press return to jump to a highlighted item.
+
+#### Execute XQuery scripts
+You can send the XQuery code in the current editor to eXist for execution by pressing `Ctrl-Enter` (on all systems). The result will be displayed in a new editor tab. Obviously this will only work for XQuery main modules.
+
+## Development
+
+### Building from source
+
+Clone the main package, cd into it and run `apm install` once. This creates a subdirectory `node_modules`. Next, call `apm link .` to register the package with Atom. The complete steps:
 
 ```shell
 git clone https://github.com/wolfgangmm/atom-existdb.git
@@ -33,50 +88,12 @@ apm install
 apm link .
 ```
 
-## Usage
+You may also want to clone and build the server-side support app:
 
-### Introduction
-The basic idea is that you work on a directory on the file system which is a copy of a collection stored inside the database. For example, you may have created an app package inside the database using eXide, then synced it to a directory. Or you checked out an existing app into a directory from github, built a xar and uploaded it to eXist. In both cases the contents of your directory will mirror the contents of the collection inside the database.
-
-When configured properly, the Atom eXistdb integration will immediately sync any change you make to a file in the directory into the database. To make this possible, the Atom eXistdb package needs some information about the current project (which corresponds to the root of the directory).
-
-### Project Configuration
-To configure the current project directory, create a file called `.existdb.json`, which may look as follows:
-
-```json
-{
-    "server": "http://localhost:8080/exist",
-    "user": "admin",
-    "password": null,
-    "root": "/db/apps/tei-simple",
-    "sync": true,
-    "ignore": ["*.json", ".git/**"]
-}
+```shell
+git clone https://github.com/wolfgangmm/atom-editor-support.git
+cd atom-editor-support
+ant
 ```
 
-where *server* is the URL of the root of the eXist instance. *user* and *password* are the credentials to use for accessing it. *root* defines the root collection to which any changes to local files will be uploaded if *sync* is set to "true". Finally, *ignore* is an array of path patterns defining files which should be ignored and won't be uploaded automatically.
-
-Once you created the configuration file, open Atom on the root directory. If you already opened that directory in Atom, reload the window (`Ctrl-Alt-Meta L`).
-
-### Features
-
-#### Linting
-Whenever you change an XQuery file, its contents will be forwarded to eXist and any compile errors will pop up in the editor window. This will not only detect errors in the current file, but also issues in modules it imports.
-
-#### Autocomplete
-While you type, autocomplete will talk to the database to get a list of functions or variable names which may match what you just typed. This will show all functions visible in the current context, including globally defined functions or functions in imported modules.
-
-#### Navigating to functions and variables
-Press `Meta-Shift-R` to see all functions and variables visible in the current context. Select one to navigate to it. This works across all files in the current project.
-
-#### Execute XQuery scripts
-You can send the XQuery code in the current editor to eXist for execution by pressing `Ctrl-Enter`. The result will be displayed in a new editor tab.
-
-## Limitations
-
-* Deleting, renaming, moving or copying a file via Atom's tree view or outside Atom will not apply that change to the database. You have to manually repeat the change inside eXist using eXide or the dashboard.
-
-## Todo
-
-* jump to the definition of a function, e.g. by shift-clicking on its name
-* add a command to force a sync for a single file or all files in a directory without having it open in the editor. This would also help to address the issue with deletions etc.
+This creates `atom-editor-0.1.xar` inside the `build/` directory. Deploy this into your eXist instance using the dashboard.

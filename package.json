@@ -2,7 +2,7 @@
   "name": "existdb",
   "main": "./lib/existdb",
   "version": "0.0.1",
-  "description": "Linting and autocomplete for XQuery scripts written for the eXist-db Native XML Database.",
+  "description": "Database browser with linting, autocomplete and hyperclick navigation for XQuery scripts written for the eXist-db Native XML Database (http://exist-db.org).",
   "author": {
     "name": "Wolfgang Meier",
     "email": "wolfgang@existsolutions.com",
@@ -15,6 +15,9 @@
       "xml"
   ],
   "repository": "https://github.com/wolfgangmm/atom-existdb",
+  "bugs": {
+      "url": "https://github.com/wolfgangmm/atom-existdb/issues"
+  },
   "license": "MIT",
   "engines": {
     "atom": ">=1.0.0 <2.0.0"
