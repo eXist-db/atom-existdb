@@ -2,6 +2,7 @@ EXistSymbolsView = require './existdb-view'
 EXistTreeView = require './existdb-tree-view'
 Config = require './project-config'
 {CompositeDisposable, Range} = require 'atom'
+request = require 'request'
 Provider = require "./provider"
 Uploader = require "./uploader"
 util = require "./util"
@@ -14,13 +15,15 @@ COMPILE_MSG_RE = /.*line:?\s(\d+)/i
 module.exports = Existdb =
     config:
         server:
-            title: 'Root HTTP URI of the eXist Server to connect to'
+            title: 'HTTP URI of the eXist Server to connect to'
             type: 'string'
             default: 'http://localhost:8080/exist'
         user:
+            title: 'User: name'
             type: 'string'
             default: 'admin'
         password:
+            title: 'User: password'
             type: 'string'
             default: ''
         root:
@@ -44,6 +47,8 @@ module.exports = Existdb =
 
         @treeView = new EXistTreeView(@state, @projectConfig)
 
+        @checkServer(@treeView, () => @treeView.populate())
+
         @provider = new Provider(@projectConfig)
 
         @symbolsView = new EXistSymbolsView(@projectConfig, @)
@@ -58,6 +63,10 @@ module.exports = Existdb =
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:file-symbols': => @gotoFileSymbol()
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:upload': @uploader.upload
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:toggle-tree-view': => @treeView.toggle()
+        @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:goto-definition': =>
+            editor = atom.workspace.getActiveTextEditor()
+            def = @getFunctionDefinition(editor, editor.getCursorBufferPosition())
+            @gotoDefinition(def.signature, editor) if def?
 
     deactivate: ->
         @projectConfig.destroy()
@@ -163,19 +172,16 @@ module.exports = Existdb =
         self = this
         providerName: 'hyperclick-xquery'
         getSuggestionForWord: (editor, text, range) ->
-            scopes = editor.getRootScopeDescriptor().getScopesArray()
-            if scopes.indexOf("source.xq") > -1
-                ast = editor.getBuffer()._ast
-                return unless ast?
-                node = XQUtils.findNode(ast, { line: range.start.row, col: range.end.column })
-                if node?
-                    parent = XQUtils.getAncestor("FunctionCall", node)
-                    if parent?
-                        signature = XQUtils.getFunctionSignature(parent)
-                        if signature?
-                            console.log("hyperclick: %s", signature.name + '#' + signature.arity)
-                            range: new Range([parent.pos.sl, parent.pos.sc], [parent.pos.el, parent.pos.ec])
-                            callback: -> self.gotoDefinition("#{signature.name}##{signature.arity}", editor)
+            def = XQUtils.getFunctionDefinition(editor, range.end)
+            if def?
+                console.log("signature: #{def.signature} range: #{def.range.start}")
+                return {
+                    range: def.range,
+                    callback: ->
+                        self.gotoDefinition(def.signature, editor)
+                }
+            else
+                console.log("no function found at cursor position: #{text}")
 
     provideLinter: ->
         provider =
@@ -251,3 +257,25 @@ module.exports = Existdb =
 
         column = error.column || 0
         return { line: line, column: parseInt(column), msg: msg }
+
+    checkServer: (treeView, onSuccess) ->
+        query = "'http://exist-db.org/apps/atom-editor' = repo:list()"
+        treeView.runQuery(query,
+            (error, response) ->
+                atom.notifications.addError("Failed to access database", detail: if response? then response.statusMessage else error)
+            (body) ->
+                return if body
+                atom.confirm
+                    message: "Install server-side support app?"
+                    detailedMessage: "This package requires a small support app to be installed on the eXistdb server. Do you want to install it?"
+                    buttons:
+                        Yes: ->
+                            query = "repo:install-and-deploy('http://exist-db.org/apps/atom-editor', 'http://demo.exist-db.org/exist/apps/public-repo/modules/find.xql')"
+                            treeView.runQuery(query,
+                                (error, response) ->
+                                    atom.notifications.addError("Failed to install support app", detail: if response? then response.statusMessage else error)
+                                (body) ->
+                                    onSuccess?()
+                            )
+                        No: -> null
+        )

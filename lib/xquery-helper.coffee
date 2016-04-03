@@ -1,4 +1,5 @@
 {XQLint} = require 'xqlint'
+{CompositeDisposable, Range} = require 'atom'
 
 module.exports =
     XQUtils =
@@ -66,3 +67,20 @@ module.exports =
                 args = @findChildren(argList, "Argument")
                 name: name.value
                 arity: args.length
+
+        getFunctionDefinition: (editor, point) =>
+            self = this
+            scopes = editor.getRootScopeDescriptor().getScopesArray()
+            if scopes.indexOf("source.xq") > -1
+                ast = editor.getBuffer()._ast
+                return unless ast?
+                node = XQUtils.findNode(ast, { line: point.row, col: point.column })
+                if node?
+                    parent = XQUtils.getAncestor("FunctionCall", node)
+                    if parent?
+                        signature = XQUtils.getFunctionSignature(parent)
+                        if signature?
+                            return {
+                                range: new Range([parent.pos.sl, parent.pos.sc], [parent.pos.el, parent.pos.ec]),
+                                signature: "#{signature.name}##{signature.arity}"
+                            }

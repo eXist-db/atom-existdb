@@ -4,44 +4,48 @@
 module.exports =
   TreeNode: class TreeNode extends View
     @content: ({label, icon, loaded, children, type}) ->
-      if children
+      if type == 'collection'
         @li class: 'list-nested-item list-selectable-item collapsed', =>
           @div class: 'list-item', =>
             @span class: "icon #{icon} #{type}", label
-          @ul class: 'list-tree', outlet: 'children', =>
-            for child in children
-              @subview 'child', new TreeNode(child)
-      else if not loaded
-        @li class: 'list-nested-item list-selectable-item collapsed', =>
-            @div class: 'list-item', =>
-                @span class: "icon #{icon} #{type}", label
-            @ul class: 'list-tree', outlet: 'children'
+          @ul class: 'list-tree', outlet: 'children'
       else
           @li class: 'list-item list-selectable-item', =>
               @span class: "icon #{icon} #{type}", label
 
     initialize: (item) ->
-      @emitter = new Emitter
-      @item = item
-      @item.view = this
+        @emitter = new Emitter
+        @item = item
+        @item.view = this
 
-      @on 'dblclick', @dblClickItem
-      @on 'click', @clickItem
+        @setChildren(item.children) if item.children?
+
+        @on 'dblclick', @dblClickItem
+        @on 'click', @clickItem
 
     setChildren: (children) ->
         @children.empty()
         @item.children = children
-        content = $$ ->
-            @div =>
-                for child in children
-                    @subview 'child', new TreeNode(child)
-        @children.append(content.children())
+        for child in children
+            childNode = new TreeNode(child)
+            childNode.parentView = @
+            @children.append(childNode)
 
-    addChild: (child) ->
+    addChild: (child) =>
+        @item.children = [] unless @item.children?
         @item.children.push(child)
-        content = $$ ->
-            @div => @subview 'child', new TreeNode(child)
-        @children.append(content.children())
+        childNode = new TreeNode(child)
+        childNode.parentView = @
+        @children.append(childNode)
+        @toggleClass('collapsed') if @hasClass('collapsed')
+
+    delete: () =>
+        newChildren = []
+        for child in @parentView.item.children
+            if child.path != @item.path
+                newChildren.push(child)
+        @parentView.item.children = newChildren
+        @remove()
 
     setCollapsed: ->
       @toggleClass('collapsed') if @item.children
@@ -57,9 +61,9 @@ module.exports =
 
     onSelect: (callback) ->
       @emitter.on 'on-select', callback
-      if @item.children
+      if @item.children?
         for child in @item.children
-          child.view.onSelect callback
+            child.view.onSelect callback
 
     clickItem: (event) =>
       if @item.children

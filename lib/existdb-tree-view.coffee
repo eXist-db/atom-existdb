@@ -47,7 +47,8 @@ module.exports =
             @treeView.width(@state.width) if @state?.width
             @toggle() if @state?.show
 
-            @disposables.add atom.commands.add 'atom-workspace', 'existdb:reindex': @reindex
+            @disposables.add atom.commands.add 'atom-workspace', 'existdb:reindex':
+                (ev) => @reindex(ev.target.spacePenView)
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:reload-tree-view':
                 (ev) => @load(ev.target.spacePenView.item)
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:new-file':
@@ -91,7 +92,7 @@ module.exports =
                 options,
                 (error, response, body) ->
                     if error? or response.statusCode != 200
-                        atom.notifications.addError("Failed to load database contents", detail: if response? then response.statusMessage else error)
+                        atom.notifications.addWarning("Failed to load database contents", detail: if response? then response.statusMessage else error)
                     else
                         item.view.setChildren(body)
                         for child in body
@@ -117,11 +118,12 @@ module.exports =
                                 sendImmediately: true
                         request(
                             options,
-                            (error, response, body) =>
+                            (error, response, body) ->
                                 if error?
                                     atom.notifications.addError("Failed to delete #{resource.path}", detail: if response? then response.statusMessage else error)
                                 else
                                     atom.notifications.addSuccess("#{resource.path} deleted")
+                                    parentView.delete()
                         )
                     No: null
 
@@ -131,25 +133,21 @@ module.exports =
 
         newCollection: (parentView) =>
             parent = parentView.item.path
-            editor = atom.workspace.getActiveTextEditor()
             dialog = new Dialog("Enter a name for the new collection:", null, (name) =>
                 if name?
                     query = "xmldb:create-collection('#{parent}', '#{name}')"
-                    url = "#{@config.getConfig(editor).server}/rest/#{parent}?_query=#{query}"
-                    options =
-                        uri: url
-                        method: "GET"
-                        auth:
-                            user: @config.getConfig(editor).user
-                            pass: @config.getConfig(editor).password || ""
-                            sendImmediately: true
-                    request(
-                        options,
-                        (error, response, body) =>
-                            if error?
-                                atom.notifications.addError("Failed to create collection #{parent}/#{name}", detail: if response? then response.statusMessage else error)
-                            else
-                                atom.notifications.addSuccess("Collection #{parent}/#{name} created")
+                    @runQuery(query,
+                        (error, response) ->
+                            atom.notifications.addError("Failed to create collection #{parent}/#{name}", detail: if response? then response.statusMessage else error)
+                        (body) ->
+                            atom.notifications.addSuccess("Collection #{parent}/#{name} created")
+                            parentView.addChild({
+                                path: "#{parent}/#{name}"
+                                label: name
+                                loaded: true
+                                type: "collection"
+                                icon: "icon-file-directory"
+                            })
                     )
             )
             dialog.attach()
@@ -277,8 +275,14 @@ module.exports =
                 )
             )
 
-        reindex: (ev) ->
-            console.log("reindex %s", ev.target.spacePenView.item.path)
+        reindex: (parentView) ->
+            query = "xmldb:reindex('#{parentView.item.path}')"
+            @runQuery(query,
+                (error, response) ->
+                    atom.notifications.addError("Failed to reindex collection #{parentView.item.path}", detail: if response? then response.statusMessage else error)
+                (body) ->
+                    atom.notifications.addSuccess("Collection #{parentView.item.path} reindexed")
+            )
 
         onSelect: ({node, item}) =>
             if not item.loaded
@@ -328,3 +332,23 @@ module.exports =
             tmpPath = path.join(@tempDir.name, path.dirname(uri))
             mkdirp.sync(tmpPath)
             return tmpPath
+
+        runQuery: (query, onError, onSuccess) =>
+            editor = atom.workspace.getActiveTextEditor()
+            url = "#{@config.getConfig(editor).server}/rest/db?_query=#{query}&_wrap=no"
+            options =
+                uri: url
+                method: "GET"
+                json: true
+                auth:
+                    user: @config.getConfig(editor).user
+                    pass: @config.getConfig(editor).password || ""
+                    sendImmediately: true
+            request(
+                options,
+                (error, response, body) =>
+                    if error? or response.statusCode != 200
+                        onError?(error, response)
+                    else
+                        onSuccess?(body)
+            )

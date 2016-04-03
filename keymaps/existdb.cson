@@ -10,11 +10,17 @@
 '.platform-darwin atom-workspace':
     'ctrl-enter': 'existdb:run'
     'cmd-ctrl-r': 'existdb:file-symbols'
+    'cmd-alt-e': 'existdb:toggle-tree-view'
+    'cmd-alt-g': 'existdb:goto-definition'
 
 '.platform-linux atom-workspace':
     'ctrl-enter': 'existdb:run'
     'ctrl-alt-r': 'existdb:file-symbols'
+    'ctrl-alt-e': 'existdb:toggle-tree-view'
+    'ctrl-alt-e': 'existdb:goto-definition'
 
 '.platform-windows atom-workspace':
     'ctrl-enter': 'existdb:run'
     'ctrl-alt-r': 'existdb:file-symbols'
+    'ctrl-alt-e': 'existdb:toggle-tree-view'
+    'ctrl-alt-e': 'existdb:goto-definition'
