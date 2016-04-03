@@ -10,6 +10,8 @@ This package contains a set of views and providers to support XQuery development
 * execution of XQuery scripts within the editor
 * symbols view to navigate to functions and variables which are in scope for the current XQuery
 
+![First steps](basic.gif)
+
 ## Dependencies
 
 The eXistdb package requires a small support app to be installed in the database instance you want to access. You should be asked if you would like to install the support app the first time the package is activated. If this fails for any reason, install it manually by going to the eXistdb dashboard. In the package manager, search for an app called *Server side support scripts for the Atom editor package* and install it.
@@ -32,7 +34,7 @@ Most eXist users will be familiar with the first approach because this is how th
 
 ### Getting Started
 
-When activated the first time, the package tries to detect if it can connect to the eXist server and if the server-side support app is installed on the database instance. By default, the package assumes that eXist can be reached using the default URL: http://localhost:8080/exist, and the password for the admin user is empty.
+When activated the first time, the package tries to detect if it can connect to the eXist server and if the server-side support app is installed on the database instance (see the first screencast above). By default, the package assumes that eXist can be reached using the default URL: http://localhost:8080/exist, and the password for the admin user is empty.
 
 If you changed the default eXist configuration or would like to connect to a different instance, head to the package configuration page in Atom and change the settings for the server URI and user credentials accordingly. Afterwards, call the *Reconnect* command from the package menu in Atom.
 
@@ -74,6 +76,8 @@ Type a few characters to limit the list to functions or variable containing that
 
 #### Execute XQuery scripts
 You can send the XQuery code in the current editor to eXist for execution by pressing `Ctrl-Enter` (on all systems). The result will be displayed in a new editor tab. Obviously this will only work for XQuery main modules.
+
+![First steps](run.gif)
 
 ## Development
 
