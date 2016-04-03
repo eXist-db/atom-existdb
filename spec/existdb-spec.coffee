@@ -12,51 +12,21 @@ describe "Existdb", ->
     workspaceElement = atom.views.getView(atom.workspace)
     activationPromise = atom.packages.activatePackage('existdb')
 
-  describe "when the existdb:toggle event is triggered", ->
-    it "hides and shows the modal panel", ->
+  describe "when the existdb:toggle-tree-view event is triggered", ->
+    it "shows the database tree view", ->
       # Before the activation event the view is not on the DOM, and no panel
       # has been created
-      expect(workspaceElement.querySelector('.existdb')).not.toExist()
+      expect(workspaceElement.querySelector('.existdb-tree')).not.toExist()
 
       # This is an activation event, triggering it will cause the package to be
       # activated.
-      atom.commands.dispatch workspaceElement, 'existdb:toggle'
+      atom.commands.dispatch workspaceElement, 'existdb:toggle-tree-view'
 
       waitsForPromise ->
         activationPromise
 
       runs ->
-        expect(workspaceElement.querySelector('.existdb')).toExist()
-
-        existdbElement = workspaceElement.querySelector('.existdb')
+        existdbElement = workspaceElement.querySelector('.existdb-tree')
         expect(existdbElement).toExist()
 
-        existdbPanel = atom.workspace.panelForItem(existdbElement)
-        expect(existdbPanel.isVisible()).toBe true
-        atom.commands.dispatch workspaceElement, 'existdb:toggle'
-        expect(existdbPanel.isVisible()).toBe false
-
-    it "hides and shows the view", ->
-      # This test shows you an integration test testing at the view level.
-
-      # Attaching the workspaceElement to the DOM is required to allow the
-      # `toBeVisible()` matchers to work. Anything testing visibility or focus
-      # requires that the workspaceElement is on the DOM. Tests that attach the
-      # workspaceElement to the DOM are generally slower than those off DOM.
-      jasmine.attachToDOM(workspaceElement)
-
-      expect(workspaceElement.querySelector('.existdb')).not.toExist()
-
-      # This is an activation event, triggering it causes the package to be
-      # activated.
-      atom.commands.dispatch workspaceElement, 'existdb:toggle'
-
-      waitsForPromise ->
-        activationPromise
-
-      runs ->
-        # Now we can test for view visibility
-        existdbElement = workspaceElement.querySelector('.existdb')
-        expect(existdbElement).toBeVisible()
-        atom.commands.dispatch workspaceElement, 'existdb:toggle'
-        expect(existdbElement).not.toBeVisible()
+        expect(existdbElement.querySelectorAll('.collection').length).toBeGreaterThan(1)
