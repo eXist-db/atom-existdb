@@ -172,7 +172,6 @@ module.exports = Existdb =
         getSuggestionForWord: (editor, text, range) ->
             def = XQUtils.getFunctionDefinition(editor, range.end)
             if def?
-                console.log("signature: #{def.signature} range: #{def.range.start}")
                 return {
                     range: def.range,
                     callback: ->

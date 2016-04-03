@@ -330,7 +330,7 @@ module.exports =
 
         getTempDir: (uri) ->
             @tempDir = tmp.dirSync({ mode: 0o750, prefix: 'atom-exist_', unsafeCleanup: true }) unless @tempDir
-            tmpPath = path.join(@tempDir.name, path.dirname(uri))
+            tmpPath = path.join(fs.realpathSync(@tempDir.name), path.dirname(uri))
             mkdirp.sync(tmpPath)
             return tmpPath
 
