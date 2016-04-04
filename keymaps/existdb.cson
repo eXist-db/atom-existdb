@@ -14,13 +14,13 @@
     'cmd-alt-g': 'existdb:goto-definition'
 
 '.platform-linux atom-workspace':
-    'ctrl-enter': 'existdb:run'
-    'ctrl-alt-r': 'existdb:file-symbols'
+    'alt-shift-enter': 'existdb:run'
+    'ctrl-shift-r': 'existdb:file-symbols'
     'ctrl-alt-e': 'existdb:toggle-tree-view'
     'ctrl-alt-g': 'existdb:goto-definition'
 
-'.platform-windows atom-workspace':
-    'ctrl-enter': 'existdb:run'
-    'ctrl-alt-r': 'existdb:file-symbols'
+'.platform-win32 atom-workspace':
+    'alt-shift-enter': 'existdb:run'
+    'ctrl-shift-r': 'existdb:file-symbols'
     'ctrl-alt-e': 'existdb:toggle-tree-view'
     'ctrl-alt-g': 'existdb:goto-definition'
