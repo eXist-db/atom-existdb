@@ -26,7 +26,11 @@ module.exports =
 
             params = util.modules(@config, editor)
             params.push("prefix=" + prefix)
-            console.log("getting suggestions for %s", prefix)
+            variables = @getInScopeVariables(editor, prefix)
+            # assume we're looking for a local variable if no namespace prefix is present
+            return variables if /^$[^:]+$/.test(prefix)
+            
+            localFuncs = @getLocalSuggestions(editor, prefix)
             self = this
             return new Promise (resolve) ->
                 $.ajax
@@ -36,8 +40,6 @@ module.exports =
                     username: self.config.getConfig(editor).user
                     password: self.config.getConfig(editor).password
                     success: (data) ->
-                        localFuncs = self.getLocalSuggestions(editor, prefix)
-                        variables = self.getInScopeVariables(editor, prefix)
                         resolve(variables.concat(localFuncs).concat(data))
 
         getPrefix: (editor, bufferPosition) ->
@@ -54,14 +56,16 @@ module.exports =
             regex = new RegExp("^" + prefix)
             localFuncs = []
             for fn in util.parseLocalFunctions(editor) when regex.test(fn.name)
-                text: fn.signature
-                type: fn.type
-                snippet: fn.snippet
-                replacementPrefix: prefix
-                localFuncs.push(fn)
+                localFuncs.push(
+                    text: fn.signature
+                    type: fn.type
+                    snippet: fn.snippet
+                    replacementPrefix: prefix
+                )
             localFuncs
 
         getInScopeVariables: (editor, prefix) ->
+            return [] unless prefix.length > 0 and prefix.charAt(0) == '$'
             ast = editor.getBuffer()._ast
             return [] unless ast?
             pos = editor.getCursorBufferPosition()
