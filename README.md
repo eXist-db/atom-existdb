@@ -40,7 +40,7 @@ If you changed the default eXist configuration or would like to connect to a dif
 
 If the server-side support app is not installed on the selected server instance, you will be asked to install it. Just answer with "Yes" and the app will be installed automatically.
 
-Once the package is activated, you should see the database browser tree view on either the left or right side of the Atom editor window. If not, please select *Toggle Database View* from the package menu.
+Once the package is activated, you should see the database browser tree view on either the left or right side of the Atom editor window. If not, please select *Toggle Database View* from the package menu (or press `cmd-alt-e` on mac, `ctrl-alt-e` on windows).
 
 Clicking on any resource in the database browser will open the remote file for editing in an Atom editor tab. Behind the scenes, the resource is downloaded and stored into a temporary directory. The connection with the remote resource is preserved though, so pressing save in the editor will reupload the changed content into the database. This should also work across restarts of Atom: the package detects if you had previously opened files stored in eXist and re-downloads them upon restart.
 
@@ -70,12 +70,12 @@ The package includes a provider for *hyperclick*: keep the `ctrl` or `command` k
 Just in case hyperclick doesn't work for you: place the cursor inside a function call and press `cmd-alt-g` or `ctrl-alt-g`.
 
 #### Symbol browser
-To quickly navigate to the definition of a function or variable, you can also use the symbol browser: press `cmd-ctrl-r` or `ctrl-alt-r` to get a popup showing all functions and variables which are visible to the code currently open in the editor.
+To quickly navigate to the definition of a function or variable, you can also use the symbol browser: press `cmd-ctrl-r` or `ctrl-shift-r` to get a popup showing all functions and variables which are visible to the code currently open in the editor.
 
 Type a few characters to limit the list to functions or variable containing that string sequence. Press return to jump to a highlighted item.
 
 #### Execute XQuery scripts
-You can send the XQuery code in the current editor to eXist for execution by pressing `Ctrl-Enter` (on all systems). The result will be displayed in a new editor tab. Obviously this will only work for XQuery main modules.
+You can send the XQuery code in the current editor to eXist for execution by pressing `Ctrl-Enter` (mac) or `alt-shift-enter` (windows/linux). The result will be displayed in a new editor tab. Obviously this will only work for XQuery main modules.
 
 ![Executing query](https://raw.githubusercontent.com/wolfgangmm/atom-existdb/master/run.gif)
 
