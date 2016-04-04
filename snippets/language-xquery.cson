@@ -1,0 +1,61 @@
+'.source.xq':
+  'for':
+    'prefix': 'for'
+    'body': 'for $${1:item} in ${2:expr}${3}'
+  'return':
+    'prefix': 'return'
+    'body': 'return\n\t${1:expr}${2}'
+  'import':
+    'prefix': 'import'
+    'body': 'import module namespace ${1:ns} = "${2:http://www.example.com/}";\n${3}'
+  'if':
+    'prefix': 'if'
+    'body': 'if(${1:true}) then\n\t${2:expr}\nelse\n\t${3:true}${4}'
+  'switch':
+    'prefix': 'switch'
+    'body': 'switch(${1:"foo"})\ncase ${2:"foo"}\nreturn ${3:true}\ndefault return ${4:false}${5}'
+  'try':
+    'prefix': 'try'
+    'body': 'try {\n\t${1:expr}\n} catch ${2:*} {\n\t${3:expr}\n}${4}'
+  'let':
+    'prefix': 'let'
+    'body': 'let $${1:varname} := ${2:expr}${3}'
+  'group':
+    'prefix': 'group'
+    'body': 'group by $${1:varname} := ${2:expr}${3}'
+  'order':
+    'prefix': 'order'
+    'body': 'order by $${1:expr} ${2:descending}${3}'
+  'treat':
+    'prefix': 'treat'
+    'body': 'treat as ${1:expr}${2}'
+  'castable':
+    'prefix': 'castable'
+    'body': 'castable as ${1:atomicType}${2}'
+  'cast':
+    'prefix': 'cast'
+    'body': 'cast as ${1:atomicType}${2}'
+  'typeswitch':
+    'prefix': 'typeswitch'
+    'body': 'typeswitch(${1:expr})\n\tcase ${2:type} return ${3:expr}\n\tdefault return ${4:expr}${5}'
+  'var':
+    'prefix': 'var'
+    'body': 'declare variable $${1:varname} := ${2:expr};${3}'
+  'fun':
+    'prefix': 'fun'
+    'body': 'declare function ${1:ns}:${2:name}() {\n\t${3:expr}\n};\n\n${4}'
+  'tmpl':
+    'prefix': 'tmpl'
+    'body': 'declare\n\t%templates:wrap\nfunction ${1:ns}:${2:name}($node as node(), $model as map(*)) {\n\t${3:expr}\n};\n\n${4}'
+  'module':
+    'prefix': 'module'
+    'body': 'module namespace ${1:ns} = "${2:http://www.example.com}";\n\n${3}'
+  'xquery':
+    'prefix': 'xquery'
+    'body': 'xquery version "${1:3.0}";\n\n${2}'
+  'tei':
+    'prefix': 'tei'
+    'body': 'declare namespace tei="http://www.tei-c.org/ns/1.0";\n${2}'
+  'output':
+    'prefix': 'output'
+    'body': 'declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";\ndeclare option output:method "${1:xml}";\ndeclare option output:media-type "${2:application/xml}";'
