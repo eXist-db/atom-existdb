@@ -2,7 +2,7 @@
   "name": "existdb",
   "main": "./lib/existdb",
   "version": "0.1.3",
-  "description": "Database browser with linting, autocomplete and hyperclick navigation for XQuery scripts written for the eXist-db Native XML Database (http://exist-db.org).",
+  "description": "XQuery development with linting, autocomplete and hyperclick navigation for the eXist-db Native XML Database (http://exist-db.org).",
   "author": {
     "name": "Wolfgang Meier",
     "email": "wolfgang@existsolutions.com",
