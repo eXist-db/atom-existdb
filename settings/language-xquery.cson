@@ -3,4 +3,4 @@
     'commentStart': '(: '
     'commentEnd': ' :)'
     'increaseIndentPattern': '[\\({]\\s*$|<[^>]+>\\s*$|(then|return)\\s*$|let.*:=\\s*$'
-    'decreaseIndentPattern': '^\\s*</[^>]+>'
+    'decreaseIndentPattern': '^\\s*[)}]|^\\s*</[^>]+>'
