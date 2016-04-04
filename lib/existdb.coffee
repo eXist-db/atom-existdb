@@ -63,7 +63,7 @@ module.exports = Existdb =
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:toggle-tree-view': => @treeView.toggle()
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:goto-definition': =>
             editor = atom.workspace.getActiveTextEditor()
-            def = @getFunctionDefinition(editor, editor.getCursorBufferPosition())
+            def = XQUtils.getFunctionDefinition(editor, editor.getCursorBufferPosition())
             @gotoDefinition(def.signature, editor) if def?
 
     deactivate: ->
