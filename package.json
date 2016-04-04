@@ -36,6 +36,9 @@
     "xqlint": "git://github.com/eXistSolutions/xqlint.git#exist-syntax",
     "hyperclick": "latest"
   },
+  "bundledDependencies": [
+      "xqlint"
+  ],
   "package-deps": [
     "linter",
     "hyperclick"
