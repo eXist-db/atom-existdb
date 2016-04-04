@@ -1,0 +1,6 @@
+'.source.xq':
+  'editor':
+    'commentStart': '(: '
+    'commentEnd': ' :)'
+    'increaseIndentPattern': '[\\({]\\s*$|<[^>]+>\\s*$|(then|return)\\s*$|let.*:=\\s*$'
+    'decreaseIndentPattern': '^\\s*</[^>]+>'
