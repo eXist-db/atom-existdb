@@ -4,9 +4,12 @@
 module.exports =
     XQUtils =
         xqlint: (editor) ->
-            xqlint = new XQLint(editor.getText(), fileName: editor.getPath())
-            editor.getBuffer()._ast = xqlint.getAST()
-            xqlint
+            try
+                xqlint = new XQLint(editor.getText(), fileName: editor.getPath())
+                editor.getBuffer()._ast = xqlint.getAST()
+                xqlint
+            catch ex
+                null
 
         findNode: (ast, pos) ->
             p = ast.pos

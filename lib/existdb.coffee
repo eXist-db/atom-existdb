@@ -99,7 +99,7 @@ module.exports = Existdb =
             password: self.projectConfig.getConfig(editor).password
             success: (data, status, xhr) ->
                 clearTimeout(notifTimeout)
-                promise = atom.workspace.open(null, split: "right")
+                promise = atom.workspace.open("query-results", split: "right")
                 promise.then((newEditor) ->
                     grammar = atom.grammars.grammarForScopeName("text.xml")
                     newEditor.setGrammar(grammar)
@@ -227,8 +227,8 @@ module.exports = Existdb =
                         messages.push(message)
 
                     xqlint = XQUtils.xqlint(editor)
-                    markers = xqlint.getWarnings()
-                    for marker in markers when marker.type != "error"
+                    markers = xqlint?.getWarnings()
+                    for marker in markers? when marker.type != "error"
                         message = {
                             type: marker.type
                             text: marker.message
