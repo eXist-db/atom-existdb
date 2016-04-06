@@ -193,10 +193,11 @@ module.exports =
 
         open: (resource, onOpen) =>
             # switch to existing editor if resource is already open
-            pane = atom.workspace.paneForURI(resource.path)
-            if pane?
-                pane.activateItemForURI(resource.path)
-                onOpen?(atom.workspace.getActiveTextEditor())
+            editor = @getOpenEditor(resource)
+            if editor?
+                pane = atom.workspace.paneForItem(editor)
+                pane.activateItem(editor)
+                onOpen?(editor)
                 return
 
             self = this
