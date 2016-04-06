@@ -5,6 +5,7 @@
   'xqm'
   'xqy'
   'xquery'
+  'xqs'
 ]
 'firstLineMatch': '^\\bxquery\\s+version\\b.*'
 'foldingStartMarker': '^\\s*(<[^!?%/](?!.+?(/>|</.+?>))|<[!%]--(?!.+?--%?>)|<%[!]?(?!.+?%>))|(declare|.*\\{\\s*(//.*)?$)'

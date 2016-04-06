@@ -60,6 +60,13 @@
       }
     }
   },
+  "consumedServices": {
+    "status-bar": {
+      "versions": {
+        "^1.0.0": "consumeStatusBar"
+      }
+    }
+  },
   "coffeelintConfig": {
     "indentation": {
       "level": "ignore",

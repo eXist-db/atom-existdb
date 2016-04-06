@@ -18,7 +18,7 @@ module.exports =
 
         @tmpDir: null
 
-        initialize: (@state, @config) ->
+        initialize: (@state, @config, @main) ->
             mime.define({
                 "application/xquery": ["xq", "xql", "xquery", "xqm"]
             })
@@ -205,6 +205,7 @@ module.exports =
             url = @config.getConfig(editor).server + "/apps/atom-editor/load.xql?path=" + resource.path
             tmpDir = @getTempDir(resource.path)
             tmpFile = path.join(tmpDir, path.basename(resource.path))
+            @main.updateStatus("Opening #{resource.path} ...")
             console.log("Downloading %s to %s", resource.path, tmpFile)
             stream = fs.createWriteStream(tmpFile)
             options =
@@ -220,9 +221,11 @@ module.exports =
                     contentType = response.headers["content-type"]
                 )
                 .on("error", (err) ->
+                    self.main.updateStatus("")
                     atom.notifications.addError("Failed to download #{resource.path}", detail: err)
                 )
                 .on("end", () ->
+                    self.main.updateStatus("")
                     promise = atom.workspace.open(null)
                     promise.then((newEditor) ->
                         buffer = newEditor.getBuffer()
@@ -261,6 +264,8 @@ module.exports =
             url = "#{@config.getConfig(editor).server}/rest/#{resource.path}"
             contentType = mime.lookup(path.extname(file)) unless contentType
             console.log("Saving %s using content type %s", resource.path, contentType)
+            @main.updateStatus("Uploading ...")
+            self = this
             options =
                 uri: url
                 method: "PUT"
@@ -277,7 +282,7 @@ module.exports =
                         if error?
                             atom.notifications.addError("Failed to upload #{resource.path}", detail: error)
                         else
-                            atom.notifications.addSuccess("Uploaded #{resource.path}: #{response.statusCode}.")
+                            self.main.updateStatus("")
                 )
             )
 

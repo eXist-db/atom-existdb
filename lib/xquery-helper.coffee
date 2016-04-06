@@ -1,5 +1,6 @@
 {XQLint} = require 'xqlint'
-{CompositeDisposable, Range} = require 'atom'
+{CompositeDisposable, Range, Point} = require 'atom'
+_path = require 'path'
 
 module.exports =
     XQUtils =
@@ -87,3 +88,40 @@ module.exports =
                                 range: new Range([parent.pos.sl, parent.pos.sc], [parent.pos.el, parent.pos.ec]),
                                 signature: "#{signature.name}##{signature.arity}"
                             }
+        
+        getText: (editor) ->
+            if _path.extname(editor.getPath()) == '.xqs' and editor.getText().length > 0
+                @extractSnippet(editor)
+            else
+                text: editor.getText()
+                prologOffset: 0
+                offset: 0
+                isSnippet: false
+        
+        extractSnippet: (editor) ->
+            pos = editor.getCursorBufferPosition()
+            prolog = ""
+            prologEnd = new Point([0, 0])
+            editor.scan(/^(xquery|import|declare)[^]*;/,
+                ({match, matchText, range, stop}) ->
+                    prolog = matchText
+                    prologEnd = range.end
+            )
+            start = prologEnd.row + 1
+            editor.backwardsScanInBufferRange(/\n(\s*\n){2,}/, new Range(prologEnd, pos),
+                ({match, matchText, range, stop}) ->
+                    start = range.start.row + 1
+                    stop()
+            )
+            lastPos = editor.clipBufferPosition([Infinity, Infinity])
+            end = lastPos
+            editor.scanInBufferRange(/\n(\s*\n){2,}/, new Range([start, 0], lastPos),
+                ({range, stop}) ->
+                    end = range.end
+                    stop()
+            )
+            chunk = editor.getTextInBufferRange(new Range([start, 0], end))
+            text: prolog + chunk
+            prologOffset: prologEnd.row
+            offset: start
+            isSnippet: true

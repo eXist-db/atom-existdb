@@ -75,3 +75,16 @@
     }
   }
 }
+
+.existdb-status {
+    .status-message {
+        margin-left: 4px;
+        
+        animation: blinker 1.2s cubic-bezier(.5, 0, 1, 1) infinite alternate;
+
+        @keyframes blinker {
+          from { opacity: 1; }
+          to { opacity: 0; }
+        }
+    }
+}
