@@ -50,8 +50,12 @@ module.exports =
     setCollapsed: ->
       @toggleClass('collapsed') if @item.children
 
-    setSelected: ->
-      @addClass('selected')
+    setSelected: () ->
+        @toggleClass('selected')
+
+    clearSelection: ->
+        for child in @item?.children
+            child.view.removeClass('selected')
 
     onDblClick: (callback) ->
       @emitter.on 'on-dbl-click', callback
@@ -111,7 +115,7 @@ module.exports =
         node.setCollapsed()
       @rootNode.onSelect ({node, item}) =>
         @clearSelect()
-        node.setSelected()
+        node.setSelected(true)
         @emitter.emit 'on-select', {node, item}
 
       @root.empty()
@@ -122,6 +126,13 @@ module.exports =
               @subview 'child', child.view
           else
             @subview 'root', root.view
+
+    getSelected: () ->
+        selected = []
+        @rootNode.find(".selected").each(() ->
+            selected.push(this.spacePenView)
+        )
+        selected
 
     traversal: (root, doing) =>
       doing(root.item)
@@ -157,7 +168,7 @@ module.exports =
 
     select: (item) ->
       @clearSelect()
-      item?.view.setSelected()
+      item?.view.setSelected(true)
 
     resizeStarted: =>
         $(document).on('mousemove', @resizeTreeView)

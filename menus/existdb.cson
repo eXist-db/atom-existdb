@@ -1,22 +1,32 @@
 # See https://atom.io/docs/latest/hacking-atom-package-word-count#menus for more details
 'context-menu':
     'atom-text-editor': [
-        {
-          'label': 'Run XQuery'
-          'command': 'existdb:run'
-        },
-        {
-          'label': 'File Symbols'
-          'command': 'existdb:file-symbols'
-        },
-        {
-            'label': 'Upload Current File'
-            'command': 'existdb:upload'
-        },
-        {
-            'label': 'Toggle Database View'
-            'command': 'existdb:toggle-tree-view'
-        }
+        'label': 'existdb'
+        'submenu': [
+            {
+              'label': 'Run XQuery'
+              'command': 'existdb:run'
+            },
+            {
+              'label': 'File Symbols'
+              'command': 'existdb:file-symbols'
+            },
+            {
+                'label': 'Upload Current File'
+                'command': 'existdb:upload-current'
+            },
+            {
+                'label': 'Toggle Database View'
+                'command': 'existdb:toggle-tree-view'
+            }
+        ]
+    ],
+    '.tree-view': [
+        { 'type': 'separator' }
+        { 'label': 'eXistdb', 'submenu': [
+            { 'label': 'Upload selected', 'command': 'existdb:upload-selected' }
+        ]}
+        { 'type': 'separator' }
     ],
     '.existdb-tree .collection': [
         {
@@ -62,7 +72,7 @@
         },
         {
             'label': 'Upload Current File'
-            'command': 'existdb:upload'
+            'command': 'existdb:upload-current'
         },
         {
             'label': 'Toggle Database View'

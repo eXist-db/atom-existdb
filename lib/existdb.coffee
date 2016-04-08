@@ -59,7 +59,7 @@ module.exports = Existdb =
         # Register command that toggles this view
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:run': => @run(atom.workspace.getActiveTextEditor())
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:file-symbols': => @gotoFileSymbol()
-        @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:upload': @uploader.upload
+        # @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:upload': @uploader.upload
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:toggle-tree-view': => @treeView.toggle()
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:goto-definition': =>
             editor = atom.workspace.getActiveTextEditor()
@@ -169,7 +169,7 @@ module.exports = Existdb =
             console.log("opening file: %s", uri)
             promise = atom.workspace.open(uri)
             promise.then((newEditor) -> onOpen?(newEditor))
-    
+
     updateStatus: (message) ->
         @statusMsg?.textContent = message
 
@@ -236,7 +236,7 @@ module.exports = Existdb =
                             filePath: editor.getPath()
                         }
                         messages.push(message)
-                    
+
                     if !chunk.isSnippet
                         xqlint = XQUtils.xqlint(editor)
                         markers = xqlint?.getWarnings()
@@ -273,10 +273,10 @@ module.exports = Existdb =
         icon = document.createElement("span")
         icon.className = "icon icon-database"
         statusContainer.appendChild(icon)
-        
+
         @statusMsg = document.createElement("span")
         @statusMsg.className ="status-message"
         @statusMsg.textContent = ""
         statusContainer.appendChild(@statusMsg)
-        
+
         @statusBarTile = statusBar.addRightTile(item: statusContainer, priority: 100)

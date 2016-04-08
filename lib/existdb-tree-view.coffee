@@ -26,18 +26,18 @@ module.exports =
             atom.workspace.observeTextEditors((editor) =>
                 buffer = editor.getBuffer()
                 p = buffer.getId()
-                if /^xmldb:exist:\/\/\/db\/.*/.test(p) and not buffer._remote?
-                    p = p.substring(14)
-                    console.log("Reopen %s from database", p)
+                console.log("checking buffer %s", p)
+                match = /^((?:http|https):\/\/.*?)(\/db.*)$/.exec(p)
+                if  match and not buffer._remote?
+                    server = match[1]
+                    p = match[2]
+                    console.log("Reopen %s from database %s", p, server)
                     editor.destroy()
                     @open(path: p, buffer)
             )
 
             @disposables = new CompositeDisposable()
             @treeView = new TreeView
-
-            @treeView.onSelect ({node, item}) ->
-                console.log("Selected %o", item)
 
             @append(@treeView)
 
@@ -60,8 +60,17 @@ module.exports =
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:new-collection':
                 (ev) => @newCollection(ev.target.spacePenView)
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:remove-resource':
-                (ev) => @removeResource(ev.target.spacePenView)
+                (ev) =>
+                    selection = @treeView.getSelected()
+                    if selection? and selection.length > 0
+                        @removeResource(selection)
+                    else
+                        @removeResource([ev.target.spacePenView])
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:reconnect': => @checkServer(() => @populate())
+            @disposables.add atom.commands.add 'atom-workspace', 'existdb:upload-current': =>
+                @uploadCurrent()
+            @disposables.add atom.commands.add 'atom-workspace', 'existdb:upload-selected': =>
+                @uploadSelected()
 
         serialize: ->
             width: @treeView.width()
@@ -102,35 +111,41 @@ module.exports =
                         item.view.setChildren(body)
                         for child in body
                             child.view.onSelect(self.onSelect)
+                            child.view.onDblClick(self.onDblClick)
                         callback() if callback
             )
 
-        removeResource: (parentView) =>
-            resource = parentView.item
+        removeResource: (selection) =>
+            message = if selection.length == 1 then "resource #{selection[0].item.path}" else "#{selection.length} resources"
             atom.confirm
                 message: "Delete resource?"
-                detailedMessage: "Are you sure you want to delete resource #{resource.path}?"
+                detailedMessage: "Are you sure you want to delete #{message}?"
                 buttons:
                     Yes: =>
                         editor = atom.workspace.getActiveTextEditor()
-                        url = "#{@config.getConfig(editor).server}/rest/#{resource.path}"
-                        options =
-                            uri: url
-                            method: "DELETE"
-                            auth:
-                                user: @config.getConfig(editor).user
-                                pass: @config.getConfig(editor).password || ""
-                                sendImmediately: true
-                        request(
-                            options,
-                            (error, response, body) ->
-                                if error?
-                                    atom.notifications.addError("Failed to delete #{resource.path}", detail: if response? then response.statusMessage else error)
-                                else
-                                    atom.notifications.addSuccess("#{resource.path} deleted")
-                                    parentView.delete()
-                        )
+                        for item in selection
+                            @doRemove(editor, item.item)
                     No: null
+
+        doRemove: (editor, resource) =>
+            url = "#{@config.getConfig(editor).server}/rest/#{resource.path}"
+            options =
+                uri: url
+                method: "DELETE"
+                auth:
+                    user: @config.getConfig(editor).user
+                    pass: @config.getConfig(editor).password || ""
+                    sendImmediately: true
+            @main.updateStatus("Deleting #{resource.path}...")
+            request(
+                options,
+                (error, response, body) =>
+                    if error?
+                        atom.notifications.addError("Failed to delete #{resource.path}", detail: if response? then response.statusMessage else error)
+                    else
+                        @main.updateStatus("")
+                        resource.view.delete()
+            )
 
         newFile: (parentView) =>
             dialog = new Dialog("Enter a name for the new resource:", null, (name) => @createFile(parentView, name) if name?)
@@ -144,15 +159,18 @@ module.exports =
                     @runQuery(query,
                         (error, response) ->
                             atom.notifications.addError("Failed to create collection #{parent}/#{name}", detail: if response? then response.statusMessage else error)
-                        (body) ->
+                        (body) =>
                             atom.notifications.addSuccess("Collection #{parent}/#{name} created")
-                            parentView.addChild({
+                            collection = {
                                 path: "#{parent}/#{name}"
                                 label: name
                                 loaded: true
                                 type: "collection"
                                 icon: "icon-file-directory"
-                            })
+                            }
+                            parentView.addChild(collection)
+                            collection.view.onSelect(@onSelect)
+                            collection.view.onDblClick(@onDblClick)
                     )
             )
             dialog.attach()
@@ -172,6 +190,8 @@ module.exports =
             promise = atom.workspace.open(null)
             promise.then((newEditor) ->
                 parentView.addChild(resource)
+                resource.view.onSelect(self.onSelect)
+                resource.view.onDblClick(self.onDblClick)
                 buffer = newEditor.getBuffer()
                 # buffer.getPath = () -> resource.path
                 buffer.setPath(tmpFile)
@@ -231,7 +251,7 @@ module.exports =
                         buffer = newEditor.getBuffer()
                         # buffer.getPath = () -> resource.path
                         buffer.setPath(tmpFile)
-                        buffer.getId = () -> "xmldb:exist://#{resource.path}"
+                        buffer.getId = () => self.getXMLDBUri(editor, resource.path)
                         buffer.loadSync()
                         resource.editor = newEditor
                         buffer._remote = resource
@@ -253,13 +273,16 @@ module.exports =
                 )
                 .pipe(stream)
 
+        getXMLDBUri: (editor, path) ->
+            return "#{@config.getConfig(editor).server}#{path}"
+
         getOpenEditor: (resource) ->
             for editor in atom.workspace.getTextEditors()
                 if editor.getBuffer()._remote?.path == resource.path
                     return editor
             return null
 
-        save: (file, resource, contentType) ->
+        save: (file, resource, contentType, onSuccess) ->
             editor = atom.workspace.getActiveTextEditor()
             url = "#{@config.getConfig(editor).server}/rest/#{resource.path}"
             contentType = mime.lookup(path.extname(file)) unless contentType
@@ -283,8 +306,34 @@ module.exports =
                             atom.notifications.addError("Failed to upload #{resource.path}", detail: error)
                         else
                             self.main.updateStatus("")
+                            onSuccess?()
                 )
             )
+
+        uploadCurrent: () =>
+            selected = @treeView.getSelected()
+            if selected.length != 1 or selected[0].item.type == "resource"
+                atom.notifications.addError("Please select a single target collection for the upload in the database tree view")
+                return
+            editor = atom.workspace.getActiveTextEditor()
+            fileName = path.basename(editor.getPath())
+            @save(editor.getPath(), path: "#{selected[0].item.path}/#{fileName}", null, () => @load(selected[0].item))
+
+        uploadSelected: () ->
+            locals =
+                $('.tree-view .selected').map(() ->
+                    if this.getPath? then this.getPath() else ''
+                ).get();
+            if locals? and locals.length > 0
+                selected = @treeView.getSelected()
+                if selected.length != 1 or selected[0].item.type == "resource"
+                    atom.notifications.addError("Please select a single target collection for the upload in the database tree view")
+                    return
+                for file in locals
+                    fileName = path.basename(file)
+                    @save(file, path: "#{selected[0].item.path}/#{fileName}", null, () =>
+                        @load(selected[0].item)
+                    )
 
         reindex: (parentView) ->
             query = "xmldb:reindex('#{parentView.item.path}')"
@@ -301,8 +350,15 @@ module.exports =
                     item.loaded = true
                     item.view.toggleClass('collapsed')
                 )
-            else if item.type == "resource"
+            else
+                item.view.setSelected(true)
+
+        onDblClick: ({node, item}) =>
+            if item.type == "resource"
                 @open(item)
+            else
+                node.setCollapsed()
+                node.clearSelection()
 
         destroy: ->
             @element.remove()
