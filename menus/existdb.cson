@@ -81,6 +81,10 @@
         {
             'label': 'Reconnect'
             'command': 'existdb:reconnect'
+        },
+        {
+            'label': 'Create Configuration for Current Project'
+            'command': 'existdb:create-configuration'
         }
       ]
     ]

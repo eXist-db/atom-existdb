@@ -4,9 +4,9 @@ Config = require './project-config'
 {CompositeDisposable, Range} = require 'atom'
 request = require 'request'
 Provider = require "./provider"
-Uploader = require "./uploader"
 util = require "./util"
 _path = require 'path'
+cp = require 'child_process'
 $ = require 'jquery'
 XQUtils = require './xquery-helper'
 
@@ -38,7 +38,6 @@ module.exports = Existdb =
     projectConfig: null
     provider: undefined
     symbolsView: undefined
-    uploader: undefined
     treeView: undefined
 
     activate: (@state) ->
@@ -51,20 +50,38 @@ module.exports = Existdb =
 
         @symbolsView = new EXistSymbolsView(@projectConfig, @)
 
-        @uploader = new Uploader(@projectConfig)
-
         # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
         @subscriptions = new CompositeDisposable
 
         # Register command that toggles this view
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:run': => @run(atom.workspace.getActiveTextEditor())
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:file-symbols': => @gotoFileSymbol()
-        # @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:upload': @uploader.upload
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:toggle-tree-view': => @treeView.toggle()
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:goto-definition': =>
             editor = atom.workspace.getActiveTextEditor()
             def = XQUtils.getFunctionDefinition(editor, editor.getCursorBufferPosition())
             @gotoDefinition(def.signature, editor) if def?
+        @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:create-configuration': => @projectConfig.create()
+
+        @watcher = cp.fork(__dirname + '/watcher.js')
+        process.on('exit', () =>
+            @watcher.kill()
+        )
+        @watcher.on("error", (error) ->
+            atom.notifications.addError(error.message)
+        )
+        @watcher.on("message", (obj) =>
+            # console.log("received message: %o", obj)
+            if obj.action == "status"
+                @updateStatus(obj.message)
+            else if obj.action == "error"
+                atom.notifications.addError(obj.message, { detail: obj.detail, dismissable: true })
+        )
+        @watcher.send({
+            action: "init"
+            configuration: @projectConfig.configs
+        })
+        @projectConfig.onConfigChanged((configs) => @watcher.send({action: "init", configuration: configs}))
 
     deactivate: ->
         @projectConfig.destroy()
@@ -73,6 +90,9 @@ module.exports = Existdb =
         @treeView.destroy()
         @statusBarTile?.destroy()
         @statusBarTile = null
+        @watcher.send({
+            action: "close"
+        })
 
     serialize: ->
         if @treeView?
@@ -104,7 +124,7 @@ module.exports = Existdb =
             success: (data, status, xhr) ->
                 clearTimeout(notifTimeout)
                 self.updateStatus("")
-                promise = atom.workspace.open("query-results", { split: "right", activatePane: false })
+                promise = atom.workspace.open("query-results", { split: "down", activatePane: false })
                 promise.then((newEditor) ->
                     grammar = atom.grammars.grammarForScopeName("text.xml")
                     newEditor.setGrammar(grammar)
@@ -116,8 +136,11 @@ module.exports = Existdb =
             error: (xhr, status) ->
                 clearTimeout(notifTimeout)
                 self.updateStatus("")
-                atom.notifications.addError("Query execution failed: #{status}",
-                    { detail: xhr.responseText, dismissable: true })
+                html = $.parseXML(xhr.responseText)
+                message = $(html).find(".description").text()
+                
+                atom.notifications.addError("Query execution failed: #{$(html).find(".message").text()} (#{status})",
+                    { detail: message, dismissable: true })
 
     gotoDefinition: (signature, editor) ->
         if @gotoLocalDefinition(signature, editor)
@@ -275,7 +298,7 @@ module.exports = Existdb =
         statusContainer.appendChild(icon)
 
         @statusMsg = document.createElement("span")
-        @statusMsg.className ="status-message"
+        @statusMsg.className ="status-message badge badge-info"
         @statusMsg.textContent = ""
         statusContainer.appendChild(@statusMsg)
 

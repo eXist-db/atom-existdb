@@ -1,3 +1,4 @@
+{Emitter} = require('atom')
 $ = require('jquery')
 fs = require 'fs'
 minimatch = require("minimatch")
@@ -7,12 +8,15 @@ class ProjectConfig
 
     configs: []
     disposables: []
+    paths: []
 
     constructor: ->
+        @emitter = new Emitter()
         @load(atom.project.getPaths())
         @disposables.push(atom.project.onDidChangePaths(@load))
 
     load: (paths) =>
+        @paths = []
         @configs = []
         for dir in paths
             if @isDirectory(dir)
@@ -32,9 +36,26 @@ class ProjectConfig
                             configFile: configPath
                             config: config
                         })
+                        @paths.push(dir)
                     catch e
                         atom.notifications.addInfo('Error parsing .existdb.json.', detail: e)
+        @emitter.emit("changed", @configs)
 
+    create: () ->
+        path = atom.project.getPaths()?[0]
+        return unless path? and @isDirectory(path)
+        
+        config = require('path').resolve(path, ".existdb.json")
+        if fs.existsSync(config)
+            atom.notifications.addWarning("Configuration file already exists: #{config}")
+            return
+        fs.writeFileSync(config, JSON.stringify(@getDefaults(), null, 4))
+        atom.workspace.open(config)
+        @load(atom.project.getPaths())
+        
+    onConfigChanged: (callback) ->
+        @emitter.on("changed", callback)
+        
     getConfig: (context) ->
         config = @getProjectConfig(context)
         if config?
@@ -61,7 +82,7 @@ class ProjectConfig
         password: atom.config.get("existdb.password")
         root: atom.config.get("existdb.root")
         sync: false
-        ignore: []
+        ignore: ['.existdb.json', '.git/**']
 
     ignoreFile: (file) ->
         config = @getConfig(file)
