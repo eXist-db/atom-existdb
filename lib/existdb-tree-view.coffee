@@ -26,7 +26,6 @@ module.exports =
             atom.workspace.observeTextEditors((editor) =>
                 buffer = editor.getBuffer()
                 p = buffer.getId()
-                console.log("checking buffer %s", p)
                 match = /^((?:http|https):\/\/.*?)(\/db.*)$/.exec(p)
                 if  match and not buffer._remote?
                     server = match[1]
@@ -267,7 +266,8 @@ module.exports =
                         )
                         self.disposables.add(onDidSave)
                         self.disposables.add(onDidDestroy)
-                        XQUtils.xqlint(newEditor)
+                        if contentType == "application/xquery"
+                            XQUtils.xqlint(newEditor)
                         onOpen?(newEditor)
                     )
                 )
@@ -323,7 +323,7 @@ module.exports =
             locals =
                 $('.tree-view .selected').map(() ->
                     if this.getPath? then this.getPath() else ''
-                ).get();
+                ).get()
             if locals? and locals.length > 0
                 selected = @treeView.getSelected()
                 if selected.length != 1 or selected[0].item.type == "resource"
@@ -337,10 +337,12 @@ module.exports =
 
         reindex: (parentView) ->
             query = "xmldb:reindex('#{parentView.item.path}')"
+            @main.updateStatus("Reindexing #{parentView.item.path}...")
             @runQuery(query,
                 (error, response) ->
                     atom.notifications.addError("Failed to reindex collection #{parentView.item.path}", detail: if response? then response.statusMessage else error)
-                (body) ->
+                (body) =>
+                    @main.updateStatus("")
                     atom.notifications.addSuccess("Collection #{parentView.item.path} reindexed")
             )
 
