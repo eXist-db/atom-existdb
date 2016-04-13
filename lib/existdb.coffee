@@ -63,25 +63,7 @@ module.exports = Existdb =
             @gotoDefinition(def.signature, editor) if def?
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:create-configuration': => @projectConfig.create()
 
-        @watcher = cp.fork(__dirname + '/watcher.js')
-        process.on('exit', () =>
-            @watcher.kill()
-        )
-        @watcher.on("error", (error) ->
-            atom.notifications.addError(error.message)
-        )
-        @watcher.on("message", (obj) =>
-            # console.log("received message: %o", obj)
-            if obj.action == "status"
-                @updateStatus(obj.message)
-            else if obj.action == "error"
-                atom.notifications.addError(obj.message, { detail: obj.detail, dismissable: true })
-        )
-        @watcher.send({
-            action: "init"
-            configuration: @projectConfig.configs
-        })
-        @projectConfig.onConfigChanged((configs) => @watcher.send({action: "init", configuration: configs}))
+        @setupWatcher()
 
     deactivate: ->
         @projectConfig.destroy()
@@ -100,6 +82,30 @@ module.exports = Existdb =
         else
             @state
 
+    setupWatcher: ->
+        @watcher = cp.fork(__dirname + '/watcher.js')
+        process.on('exit', () =>
+            @watcher.kill()
+        )
+        @watcher.on("error", (error) ->
+            atom.notifications.addError(error.message)
+        )
+        @watcher.on("message", (obj) =>
+            # console.log("received message: %o", obj)
+            if obj.action == "status"
+                @updateStatus(obj.message)
+            else if obj.action == "error"
+                atom.notifications.addError(obj.message, { detail: obj.detail, dismissable: true })
+        )
+        @watcher.on("close", () =>
+            @setupWatcher()
+        )
+        @watcher.send({
+            action: "init"
+            configuration: @projectConfig.configs
+        })
+        @projectConfig.onConfigChanged((configs) => @watcher.send({action: "init", configuration: configs}))
+        
     gotoFileSymbol: ->
         editor = atom.workspace.getActiveTextEditor()
         @symbolsView.populate(editor)
