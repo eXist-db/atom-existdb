@@ -106,6 +106,8 @@ class ProjectConfig
                 @globalConfig = JSON.parse(contents)
             catch e
                 atom.notifications.addInfo('Error parsing .existdb.json.', detail: e)
+        for name, connection of @globalConfig.servers
+            connection.name = name
 
     getProjectConfig: (context) ->
         context ?= @paths[0]
