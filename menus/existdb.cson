@@ -83,6 +83,10 @@
             'command': 'existdb:reconnect'
         },
         {
+            'label': 'Edit Server Configuration'
+            'command': 'existdb:edit-configuration'
+        },
+        {
             'label': 'Create Configuration for Current Project'
             'command': 'existdb:create-configuration'
         }

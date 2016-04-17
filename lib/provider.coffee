@@ -33,12 +33,17 @@ module.exports =
             localFuncs = @getLocalSuggestions(editor, prefix)
             self = this
             return new Promise (resolve) ->
+                id = editor.getBuffer().getId()
+                if id.startsWith("exist:")
+                    connection = self.config.getConnection(id)
+                else
+                    connection = self.config.getConnection(editor)
                 $.ajax
-                    url: self.config.getConfig(editor).server +
+                    url: connection.server +
                         "/apps/atom-editor/atom-autocomplete.xql?" +
                             params.join("&")
-                    username: self.config.getConfig(editor).user
-                    password: self.config.getConfig(editor).password
+                    username: connection.user
+                    password: connection.password
                     success: (data) ->
                         resolve(variables.concat(localFuncs).concat(data))
 

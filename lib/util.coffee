@@ -125,5 +125,11 @@ module.exports =
         else
             relativePath = atom.project.relativizePath(editor.getPath())[1]
             collection = path.dirname(relativePath)
-            basePath: "xmldb:exist://" + config.getConfig(editor).root + "/" + collection
+            basePath: "xmldb:exist://" + config.getConfig(editor).sync?.root + "/" + collection
             collection: collection
+    
+    parseURI: (uri) ->
+        match = /^exist:\/\/(.*?)(\/db.*)$/.exec(uri)
+        if  match?
+            server: match[1]
+            path: match[2]

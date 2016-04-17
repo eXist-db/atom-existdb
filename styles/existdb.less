@@ -10,13 +10,25 @@
 .existdb-tree {
     display: flex;
     flex-direction: column;
+    
+    select {
+        flex-grow: 0;
+        flex-shrink: 0;
+        color: @text-color;
+        border-color: @base-border-color;
+        background-color: @button-background-color;
+        font-size: 1.25em;
+        height: 2em;
+        margin-top: 10px;
+        margin-bottom: 10px;
+    }
 }
 
 .existdb-tree-view {
   flex-grow: 1;
   flex-shrink: 0;
   min-width: -webkit-min-content;
-  min-height: 100%;
+  //min-height: 100%;
   padding-left: @component-padding;
   padding-right: @component-padding;
   position: relative;

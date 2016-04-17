@@ -13,27 +13,6 @@ XQUtils = require './xquery-helper'
 COMPILE_MSG_RE = /.*line:?\s(\d+)/i
 
 module.exports = Existdb =
-    config:
-        server:
-            title: 'HTTP URI of the eXist Server to connect to'
-            type: 'string'
-            default: 'http://localhost:8080/exist'
-        user:
-            title: 'User: name'
-            type: 'string'
-            default: 'admin'
-        password:
-            title: 'User: password'
-            type: 'string'
-            default: ''
-        root:
-            title: 'Root collection'
-            description: """The root collection to resolve relative paths against when
-                working on a local app directory.
-                Set this to the app root if you are working on an application package,
-                e.g. /db/apps/test-app."""
-            type: 'string'
-            default: '/db'
     subscriptions: null
     projectConfig: null
     provider: undefined
@@ -61,7 +40,6 @@ module.exports = Existdb =
             editor = atom.workspace.getActiveTextEditor()
             def = XQUtils.getFunctionDefinition(editor, editor.getCursorBufferPosition())
             @gotoDefinition(def.signature, editor) if def?
-        @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:create-configuration': => @projectConfig.create()
 
         @setupWatcher()
 
@@ -72,7 +50,7 @@ module.exports = Existdb =
         @treeView.destroy()
         @statusBarTile?.destroy()
         @statusBarTile = null
-        @watcher.send({
+        @watcher?.send({
             action: "close"
         })
 
@@ -83,6 +61,14 @@ module.exports = Existdb =
             @state
 
     setupWatcher: ->
+        if @watcher?
+            @watcher.send({
+                action: "close"
+            })
+            @watcher.kill()
+        
+        return unless @projectConfig.useSync()
+        
         @watcher = cp.fork(__dirname + '/watcher.js')
         process.on('exit', () =>
             @watcher.kill()
@@ -104,7 +90,7 @@ module.exports = Existdb =
             action: "init"
             configuration: @projectConfig.configs
         })
-        @projectConfig.onConfigChanged((configs) => @watcher.send({action: "init", configuration: configs}))
+        @projectConfig.onConfigChanged(([configs, globalConfig]) => @watcher.send({action: "init", configuration: configs}))
         
     gotoFileSymbol: ->
         editor = atom.workspace.getActiveTextEditor()
@@ -120,13 +106,14 @@ module.exports = Existdb =
             )
         @updateStatus("Running query ...")
         chunk = XQUtils.getText(editor)
+        connection = @projectConfig.getConnection(editor, @projectConfig.activeServer)
         $.ajax
             type: "POST"
-            url: self.projectConfig.getConfig(editor).server + "/apps/atom-editor/execute"
+            url: "#{connection.server}/apps/atom-editor/execute"
             dataType: "text"
             data: { "qu": chunk.text, "base": collectionPaths.basePath, "output": "adaptive", "count": 10 }
-            username: self.projectConfig.getConfig(editor).user
-            password: self.projectConfig.getConfig(editor).password
+            username: connection.user
+            password: connection.password
             success: (data, status, xhr) ->
                 clearTimeout(notifTimeout)
                 self.updateStatus("")
@@ -153,14 +140,20 @@ module.exports = Existdb =
             return
 
         params = util.modules(@projectConfig, editor, false)
-        config = @projectConfig.getConfig(editor)
+        id = editor.getBuffer().getId()
+        console.log("getting definitions for %s", id)
+        if id.startsWith("exist:")
+            connection = @projectConfig.getConnection(id)
+        else
+            connection = @projectConfig.getConnection(editor)
+
         self = this
         $.ajax
-            url: config.server +
+            url: connection.server +
                 "/apps/atom-editor/atom-autocomplete.xql?signature=" + encodeURIComponent(signature) + "&" +
                     params.join("&")
-            username: config.user
-            password: config.password
+            username: connection.user
+            password: connection.password
             success: (data) ->
                 for item in data
                     if item.name == signature
@@ -184,9 +177,9 @@ module.exports = Existdb =
         if editor.getBuffer()._remote?
             if uri.indexOf("xmldb:exist://") == 0
                 uri = uri.substring(uri.indexOf("/db"))
-            @treeView.open(path: uri, onOpen)
+            @treeView.open(path: uri, util.parseURI(editor.getBuffer().getId()).server, onOpen)
         else
-            rootCol = "#{@projectConfig.getConfig(editor).root}/"
+            rootCol = "#{@projectConfig.getConnection(editor).sync.root}/"
             xmldbRoot = "xmldb:exist://#{rootCol}"
             if uri.indexOf(xmldbRoot) is 0
                 uri = uri.substring(xmldbRoot.length)
@@ -235,16 +228,21 @@ module.exports = Existdb =
         collectionPaths = util.getCollectionPaths(editor, @projectConfig)
         self = this
         return new Promise (resolve) ->
+            id = editor.getBuffer().getId()
+            if id.startsWith("exist:")
+                connection = self.projectConfig.getConnection(id)
+            else
+                connection = self.projectConfig.getConnection(editor)
             $.ajax
                 type: "PUT"
-                url: self.projectConfig.getConfig(editor).server + "/apps/atom-editor/compile.xql"
+                url: connection.server + "/apps/atom-editor/compile.xql"
                 dataType: "json"
                 data: chunk.text
                 headers:
                     "X-BasePath": collectionPaths.basePath
                 contentType: "application/octet-stream"
-                username: self.projectConfig.getConfig(editor).user
-                password: self.projectConfig.getConfig(editor).password
+                username: connection.user
+                password: connection.password
                 success: (data) ->
                     messages = []
 
@@ -269,6 +267,9 @@ module.exports = Existdb =
                     if !chunk.isSnippet
                         xqlint = XQUtils.xqlint(editor)
                         markers = xqlint?.getWarnings()
+                        errors = xqlint?.getErrors()
+                        if errors? and errors.length > 0
+                            console.log("errors: %o", errors)
                         for marker in markers
                             message = {
                                 type: marker.type

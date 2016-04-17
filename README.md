@@ -34,9 +34,23 @@ Most eXist users will be familiar with the first approach because this is how th
 
 ### Getting Started
 
-When activated the first time, the package tries to detect if it can connect to the eXist server and if the server-side support app is installed on the database instance (see the first screencast above). By default, the package assumes that eXist can be reached using the default URL: http://localhost:8080/exist, and the password for the admin user is empty.
+When activated the first time, the package tries to detect if it can connect to an eXist server at the default location and if the server-side support app is installed on the database instance (see the first screencast above). By default, the package assumes that eXist can be reached using the URL: http://localhost:8080/exist, and the password for the admin user is empty.
 
-If you changed the default eXist configuration or would like to connect to a different instance, head to the package configuration page in Atom and change the settings for the server URI and user credentials accordingly. Afterwards, call the *Reconnect* command from the package menu in Atom.
+If you changed the default eXist configuration or would like to connect to a different instance, select "Edit Server Configuration" from the packages menu or run the `existdb:edit-configuration` command. The configuration file is a simple JSON file:
+
+```json
+{
+    "servers": {
+        "localhost": {
+            "server": "http://localhost:8080/exist",
+            "user": "admin",
+            "password": ""
+        }
+    }
+}
+```
+
+The "servers" object is a dictionary mapping server names to connection details for each server available. After changing this file, you may need to call the *Reconnect* command from the package menu in Atom.
 
 If the server-side support app is not installed on the selected server instance, you will be asked to install it. Just answer with "Yes" and the app will be installed automatically.
 

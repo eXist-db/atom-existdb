@@ -64,15 +64,19 @@ class EXistSymbolsView extends SelectListView
 
     getImportedSymbols: (editor) ->
         params = util.modules(@config, editor, false)
-        config = @config.getConfig(editor)
+        id = editor.getBuffer().getId()
+        if id.startsWith("exist:")
+            connection = @config.getConnection(id)
+        else
+            connection = @config.getConnection(editor)
         @setLoading("Loading imported symbols...")
         self = this
         $.ajax
-            url: config.server +
+            url: connection.server +
                 "/apps/atom-editor/atom-autocomplete.xql?" +
                     params.join("&")
-            username: config.user
-            password: config.password
+            username: connection.user
+            password: connection.password
             success: (data) ->
                 for item in data
                     self.symbols.push({

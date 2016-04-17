@@ -54,7 +54,7 @@ module.exports =
         @toggleClass('selected')
 
     clearSelection: ->
-        for child in @item?.children
+        for child in @item?.children?
             child.view.removeClass('selected')
 
     onDblClick: (callback) ->
@@ -91,7 +91,7 @@ module.exports =
 
   TreeView: class TreeView extends ScrollView
     @content: ->
-        @div class: 'existdb-tree-view-resizer tool-panel focusable-panel', 'data-show-on-right-side': !atom.config.get('tree-view.showOnRightSide'), =>
+        @div class: 'existdb-tree-view-resizer', 'data-show-on-right-side': !atom.config.get('tree-view.showOnRightSide'), =>
             @div class: 'tree-view-scroller order--center', =>
                 @ul class: 'existdb-tree-view list-tree has-collapsable-children', outlet: 'root'
             @div class: 'tree-view-resize-handle', outlet: 'resizeHandle'

@@ -2,6 +2,7 @@
 {TreeView} = require "./tree-view"
 XQUtils = require './xquery-helper'
 Dialog = require './dialog'
+# EXistEditor = require './editor'
 request = require 'request'
 path = require 'path'
 fs = require 'fs'
@@ -14,7 +15,8 @@ module.exports =
     class EXistTreeView extends View
 
         @content: ->
-            @div class: "existdb-tree"
+            @div class: "existdb-tree block tool-panel focusable-panel", =>
+                @select class: "existdb-database-select", outlet: 'servers'
 
         @tmpDir: null
 
@@ -26,13 +28,13 @@ module.exports =
             atom.workspace.observeTextEditors((editor) =>
                 buffer = editor.getBuffer()
                 p = buffer.getId()
-                match = /^((?:http|https):\/\/.*?)(\/db.*)$/.exec(p)
+                match = /^exist:\/\/(.*?)(\/db.*)$/.exec(p)
                 if  match and not buffer._remote?
                     server = match[1]
                     p = match[2]
                     console.log("Reopen %s from database %s", p, server)
                     editor.destroy()
-                    @open(path: p, buffer)
+                    @open(path: p, server)
             )
 
             @disposables = new CompositeDisposable()
@@ -47,6 +49,10 @@ module.exports =
             atom.config.onDidChange('existdb.password', (ev) => @checkServer(() => @populate()))
             atom.config.onDidChange('existdb.root', (ev) => @checkServer(() => @populate()))
 
+            # @disposables.add atom.workspace.addOpener (uri) ->
+            #     if uri.startsWith "xmldb:exist:"
+            #         new EXistEditor()
+            
             @treeView.width(@state.width) if @state?.width
             @toggle() if @state?.show
 
@@ -70,10 +76,37 @@ module.exports =
                 @uploadCurrent()
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:upload-selected': =>
                 @uploadSelected()
+            
+            @initServerList()
+            @config.activeServer = @getActiveServer()
+            @servers.on("change", =>
+                @populate()
+                @config.activeServer = @getActiveServer()
+            )
+            @config.onConfigChanged(([configs, globalConfig]) =>
+                @initServerList()
+                @checkServer(() => @populate())
+            )
 
+        initServerList: ()->
+            configs = @config.getConfig()
+            @servers.empty()
+            for name, config of configs.servers
+                option = document.createElement("option")
+                option.value = name
+                option.title = config.server
+                if name == @state?.activeServer
+                    option.selected = true
+                option.appendChild(document.createTextNode(name))
+                @servers.append(option)
+                
+        getActiveServer: ->
+            @servers.val()
+        
         serialize: ->
             width: @treeView.width()
             show: @hasParent()
+            activeServer: @getActiveServer()
 
         populate: ->
             root = {
@@ -88,18 +121,17 @@ module.exports =
             @checkServer(() => @load(root))
 
         load: (item, callback) =>
-            console.log("Loading collection contents for item #{item.path} using server #{@config.getConfig(editor).server}")
             self = this
-            editor = atom.workspace.getActiveTextEditor()
-            url = @config.getConfig(editor).server +
-                "/apps/atom-editor/browse.xql?root=" + item.path
+            connection = @config.getConnection(null, @getActiveServer())
+            console.log("Loading collection contents for item #{item.path} using server #{connection.server}")
+            url = "#{connection.server}/apps/atom-editor/browse.xql?root=#{item.path}"
             options =
                 uri: url
                 method: "GET"
                 json: true
                 auth:
-                    user: @config.getConfig(editor).user
-                    pass: @config.getConfig(editor).password || ""
+                    user: connection.user
+                    pass: connection.password || ""
                     sendImmediately: true
             request(
                 options,
@@ -121,19 +153,19 @@ module.exports =
                 detailedMessage: "Are you sure you want to delete #{message}?"
                 buttons:
                     Yes: =>
-                        editor = atom.workspace.getActiveTextEditor()
                         for item in selection
-                            @doRemove(editor, item.item)
+                            @doRemove(item.item)
                     No: null
 
-        doRemove: (editor, resource) =>
-            url = "#{@config.getConfig(editor).server}/rest/#{resource.path}"
+        doRemove: (resource) =>
+            connection = @config.getConnection(null, @getActiveServer())
+            url = "#{connection.server}/rest/#{resource.path}"
             options =
                 uri: url
                 method: "DELETE"
                 auth:
-                    user: @config.getConfig(editor).user
-                    pass: @config.getConfig(editor).password || ""
+                    user: connection.user
+                    pass: connection.password || ""
                     sendImmediately: true
             @main.updateStatus("Deleting #{resource.path}...")
             request(
@@ -197,7 +229,7 @@ module.exports =
                 resource.editor = newEditor
                 buffer._remote = resource
                 onDidSave = buffer.onDidSave((ev) ->
-                    self.save(tmpFile, resource, mime.lookup(resource.path))
+                    self.save(null, tmpFile, resource, mime.lookup(resource.path))
                 )
                 onDidDestroy = buffer.onDidDestroy((ev) ->
                     self.disposables.remove(onDidSave)
@@ -210,7 +242,7 @@ module.exports =
                 self.disposables.add(onDidDestroy)
             )
 
-        open: (resource, onOpen) =>
+        open: (resource, server, onOpen) =>
             # switch to existing editor if resource is already open
             editor = @getOpenEditor(resource)
             if editor?
@@ -220,8 +252,9 @@ module.exports =
                 return
 
             self = this
-            editor = atom.workspace.getActiveTextEditor()
-            url = @config.getConfig(editor).server + "/apps/atom-editor/load.xql?path=" + resource.path
+            server ?= @getActiveServer()
+            connection = @config.getConnection(null, server)
+            url = "#{connection.server}/apps/atom-editor/load.xql?path=#{resource.path}"
             tmpDir = @getTempDir(resource.path)
             tmpFile = path.join(tmpDir, path.basename(resource.path))
             @main.updateStatus("Opening #{resource.path} ...")
@@ -231,8 +264,8 @@ module.exports =
                 uri: url
                 method: "GET"
                 auth:
-                    user: @config.getConfig(editor).user
-                    pass: @config.getConfig(editor).password || ""
+                    user: connection.user
+                    pass: connection.password || ""
                     sendImmediately: true
             contentType = null
             request(options)
@@ -250,12 +283,12 @@ module.exports =
                         buffer = newEditor.getBuffer()
                         # buffer.getPath = () -> resource.path
                         buffer.setPath(tmpFile)
-                        buffer.getId = () => self.getXMLDBUri(editor, resource.path)
+                        buffer.getId = () => self.getXMLDBUri(connection, resource.path)
                         buffer.loadSync()
                         resource.editor = newEditor
                         buffer._remote = resource
                         onDidSave = buffer.onDidSave((ev) ->
-                            self.save(tmpFile, resource, contentType)
+                            self.save(buffer, tmpFile, resource, contentType)
                         )
                         onDidDestroy = buffer.onDidDestroy((ev) ->
                             self.disposables.remove(onDidSave)
@@ -273,8 +306,8 @@ module.exports =
                 )
                 .pipe(stream)
 
-        getXMLDBUri: (editor, path) ->
-            return "#{@config.getConfig(editor).server}#{path}"
+        getXMLDBUri: (connection, path) ->
+            return "exist://#{connection.name}#{path}"
 
         getOpenEditor: (resource) ->
             for editor in atom.workspace.getTextEditors()
@@ -282,19 +315,24 @@ module.exports =
                     return editor
             return null
 
-        save: (file, resource, contentType, onSuccess) ->
+        save: (buffer, file, resource, contentType, onSuccess) ->
             editor = atom.workspace.getActiveTextEditor()
-            url = "#{@config.getConfig(editor).server}/rest/#{resource.path}"
+            if buffer?
+                connection = @config.getConnection(buffer.getId())
+            else
+                connection = @config.getConnection(null, @getActiveServer())
+            
+            url = "#{connection.server}/rest/#{resource.path}"
             contentType = mime.lookup(path.extname(file)) unless contentType
-            console.log("Saving %s using content type %s", resource.path, contentType)
+            console.log("Saving %s to %s using content type %s", resource.path, connection.server, contentType)
             @main.updateStatus("Uploading ...")
             self = this
             options =
                 uri: url
                 method: "PUT"
                 auth:
-                    user: @config.getConfig(editor).user
-                    pass: @config.getConfig(editor).password || ""
+                    user: connection.user
+                    pass: connection.password || ""
                     sendImmediately: true
                 headers:
                     "Content-Type": contentType
@@ -317,7 +355,7 @@ module.exports =
                 return
             editor = atom.workspace.getActiveTextEditor()
             fileName = path.basename(editor.getPath())
-            @save(editor.getPath(), path: "#{selected[0].item.path}/#{fileName}", null, () => @load(selected[0].item))
+            @save(null, editor.getPath(), path: "#{selected[0].item.path}/#{fileName}", null, () => @load(selected[0].item))
 
         uploadSelected: () ->
             locals =
@@ -331,7 +369,7 @@ module.exports =
                     return
                 for file in locals
                     fileName = path.basename(file)
-                    @save(file, path: "#{selected[0].item.path}/#{fileName}", null, () =>
+                    @save(null, file, path: "#{selected[0].item.path}/#{fileName}", null, () =>
                         @load(selected[0].item)
                     )
 
@@ -404,14 +442,15 @@ module.exports =
 
         runQuery: (query, onError, onSuccess) =>
             editor = atom.workspace.getActiveTextEditor()
-            url = "#{@config.getConfig(editor).server}/rest/db?_query=#{query}&_wrap=no"
+            connection = @config.getConnection(null, @getActiveServer())
+            url = "#{connection.server}/rest/db?_query=#{query}&_wrap=no"
             options =
                 uri: url
                 method: "GET"
                 json: true
                 auth:
-                    user: @config.getConfig(editor).user
-                    pass: @config.getConfig(editor).password || ""
+                    user: connection.user
+                    pass: connection.password || ""
                     sendImmediately: true
             request(
                 options,
