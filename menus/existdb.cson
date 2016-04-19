@@ -28,6 +28,11 @@
         ]}
         { 'type': 'separator' }
     ],
+    '.tree-view .file span[data-name *= ".xar"]': [
+        { 'label': 'eXistdb', 'submenu': [
+            { 'label': 'Deploy Package', 'command': 'existdb:deploy' }
+        ]}
+    ],
     '.existdb-tree .collection': [
         {
             'label': 'Refresh'
@@ -55,6 +60,11 @@
             'label': 'Remove'
             'command': 'existdb:remove-resource'
         }
+    ],
+    '.atom-commander .file': [
+        { 'label': 'eXistdb', 'submenu': [
+            { 'label': 'Deploy Package', 'command': 'existdb:deploy' }
+        ]}
     ]
 'menu': [
   {

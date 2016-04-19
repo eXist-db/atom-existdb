@@ -76,6 +76,7 @@ module.exports =
                 @uploadCurrent()
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:upload-selected': =>
                 @uploadSelected()
+            @disposables.add atom.commands.add 'atom-workspace', 'existdb:deploy': @deploy
             
             @initServerList()
             @config.activeServer = @getActiveServer()
@@ -341,7 +342,7 @@ module.exports =
                     options,
                     (error, response, body) ->
                         if error?
-                            atom.notifications.addError("Failed to upload #{resource.path}", detail: error)
+                            atom.notifications.addError("Failed to upload #{resource.path}", detail: if response? then response.statusMessage else error)
                         else
                             self.main.updateStatus("")
                             onSuccess?()
@@ -357,7 +358,7 @@ module.exports =
             fileName = path.basename(editor.getPath())
             @save(null, editor.getPath(), path: "#{selected[0].item.path}/#{fileName}", null, () => @load(selected[0].item))
 
-        uploadSelected: () ->
+        uploadSelected: (done) ->
             locals =
                 $('.tree-view .selected').map(() ->
                     if this.getPath? then this.getPath() else ''
@@ -371,8 +372,40 @@ module.exports =
                     fileName = path.basename(file)
                     @save(null, file, path: "#{selected[0].item.path}/#{fileName}", null, () =>
                         @load(selected[0].item)
+                        done?("#{selected[0].item.path}/#{fileName}")
                     )
 
+        deploy: () =>
+            locals =
+                $('.tree-view .selected').map(() ->
+                    if this.getPath? then this.getPath() else ''
+                ).get()
+            if locals? and locals.length > 0
+                for file in locals
+                    fileName = path.basename(file)
+                    targetPath = "/db/system/repo/#{fileName}"
+                    @main.updateStatus("Uploading package ...")
+                    @save(null, file, path: targetPath, null, () =>
+                        @main.updateStatus("Deploying package ...")
+                        connection = @config.getConnection(null, @getActiveServer())
+                        url = "#{connection.server}/apps/atom-editor/packages.xql?action=deploy&xar=#{encodeURIComponent(targetPath)}"
+                        options =
+                            uri: url
+                            method: "GET"
+                            json: true
+                            auth:
+                                user: connection.user
+                                pass: connection.password || ""
+                                sendImmediately: true
+                        request(
+                            options,
+                            (error, response, body) =>
+                                if error? or response.statusCode != 200
+                                    atom.notifications.addError("Failed to deploy package", detail: if response? then response.statusMessage else error)
+                                @main.updateStatus("")
+                        )
+                    )
+            
         reindex: (parentView) ->
             query = "xmldb:reindex('#{parentView.item.path}')"
             @main.updateStatus("Reindexing #{parentView.item.path}...")
