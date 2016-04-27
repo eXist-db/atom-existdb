@@ -60,11 +60,6 @@
             'label': 'Remove'
             'command': 'existdb:remove-resource'
         }
-    ],
-    '.atom-commander .file': [
-        { 'label': 'eXistdb', 'submenu': [
-            { 'label': 'Deploy Package', 'command': 'existdb:deploy' }
-        ]}
     ]
 'menu': [
   {
@@ -97,7 +92,7 @@
             'command': 'existdb:edit-configuration'
         },
         {
-            'label': 'Create Configuration for Current Project'
+            'label': 'Edit Configuration for Current Project'
             'command': 'existdb:create-configuration'
         }
       ]
