@@ -107,33 +107,36 @@ module.exports = Existdb =
         @updateStatus("Running query ...")
         chunk = XQUtils.getText(editor)
         connection = @projectConfig.getConnection(editor, @projectConfig.activeServer)
-        $.ajax
-            type: "POST"
-            url: "#{connection.server}/apps/atom-editor/execute"
-            dataType: "text"
-            data: { "qu": chunk.text, "base": collectionPaths.basePath, "output": "adaptive", "count": 10 }
-            username: connection.user
-            password: connection.password
-            success: (data, status, xhr) ->
+        options =
+            uri: "#{connection.server}/apps/atom-editor/execute"
+            method: "POST"
+            qs: { "qu": chunk.text, "base": collectionPaths.basePath, "output": "adaptive", "count": 10 }
+            auth:
+                user: connection.user
+                pass: connection.password || ""
+                sendImmediately: true
+        request(
+            options,
+            (error, response, body) =>
                 clearTimeout(notifTimeout)
-                self.updateStatus("")
-                promise = atom.workspace.open("query-results", { split: "down", activatePane: false })
-                promise.then((newEditor) ->
-                    grammar = atom.grammars.grammarForScopeName("text.xml")
-                    newEditor.setGrammar(grammar)
-                    newEditor.setText(data)
-                    elapsed = xhr.getResponseHeader("X-elapsed")
-                    results = xhr.getResponseHeader("X-result-count")
-                    atom.notifications.addSuccess("Query found #{results} results in #{elapsed}s")
-                )
-            error: (xhr, status) ->
-                clearTimeout(notifTimeout)
-                self.updateStatus("")
-                html = $.parseXML(xhr.responseText)
-                message = $(html).find(".description").text()
-                
-                atom.notifications.addError("Query execution failed: #{$(html).find(".message").text()} (#{status})",
-                    { detail: message, dismissable: true })
+                @updateStatus("")
+                if error? or response.statusCode != 200
+                    html = $.parseXML(xhr.responseText)
+                    message = $(html).find(".description").text()
+                    
+                    atom.notifications.addError("Query execution failed: #{$(html).find(".message").text()} (#{status})",
+                        { detail: message, dismissable: true })
+                else
+                    promise = atom.workspace.open("query-results", { split: "down", activatePane: false })
+                    promise.then((newEditor) ->
+                        grammar = atom.grammars.grammarForScopeName("text.xml")
+                        newEditor.setGrammar(grammar)
+                        newEditor.setText(body)
+                        elapsed = response.headers["x-elapsed"]
+                        results = response.headers["x-result-count"]
+                        atom.notifications.addSuccess("Query found #{results} results in #{elapsed}s")
+                    )
+        )
 
     gotoDefinition: (signature, editor) ->
         if @gotoLocalDefinition(signature, editor)
