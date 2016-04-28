@@ -42,6 +42,17 @@ module.exports =
 
             @append(@treeView)
 
+            @initServerList()
+            @config.activeServer = @getActiveServer()
+            @servers.on("change", =>
+                @populate()
+                @config.activeServer = @getActiveServer()
+            )
+            @config.onConfigChanged(([configs, globalConfig]) =>
+                @initServerList()
+                @checkServer(() => @populate())
+            )
+
             atom.config.observe 'existdb-tree-view.scrollAnimation', (enabled) =>
                 @animationDuration = if enabled then 300 else 0
             atom.config.onDidChange('existdb.server', (ev) => @checkServer(() => @populate()))
@@ -52,7 +63,7 @@ module.exports =
             # @disposables.add atom.workspace.addOpener (uri) ->
             #     if uri.startsWith "xmldb:exist:"
             #         new EXistEditor()
-            
+
             @treeView.width(@state.width) if @state?.width
             @toggle() if @state?.show
 
@@ -77,17 +88,6 @@ module.exports =
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:upload-selected': =>
                 @uploadSelected()
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:deploy': @deploy
-            
-            @initServerList()
-            @config.activeServer = @getActiveServer()
-            @servers.on("change", =>
-                @populate()
-                @config.activeServer = @getActiveServer()
-            )
-            @config.onConfigChanged(([configs, globalConfig]) =>
-                @initServerList()
-                @checkServer(() => @populate())
-            )
 
         initServerList: ()->
             configs = @config.getConfig()
@@ -100,10 +100,10 @@ module.exports =
                     option.selected = true
                 option.appendChild(document.createTextNode(name))
                 @servers.append(option)
-                
+
         getActiveServer: ->
             @servers.val()
-        
+
         serialize: ->
             width: @treeView.width()
             show: @hasParent()
@@ -322,7 +322,7 @@ module.exports =
                 connection = @config.getConnection(buffer.getId())
             else
                 connection = @config.getConnection(null, @getActiveServer())
-            
+
             url = "#{connection.server}/rest/#{resource.path}"
             contentType = mime.lookup(path.extname(file)) unless contentType
             console.log("Saving %s to %s using content type %s", resource.path, connection.server, contentType)
@@ -405,7 +405,7 @@ module.exports =
                                 @main.updateStatus("")
                         )
                     )
-            
+
         reindex: (parentView) ->
             query = "xmldb:reindex('#{parentView.item.path}')"
             @main.updateStatus("Reindexing #{parentView.item.path}...")

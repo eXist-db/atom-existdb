@@ -48,7 +48,7 @@ class ProjectConfig
                         config.configFile = configPath
                         for name, connection of config.servers
                             connection.name = name
-                        
+
                         console.log("configuration file %s: %o", configPath, config)
                         @configs.push(config)
 
@@ -60,7 +60,7 @@ class ProjectConfig
     createProjectConfig: () ->
         path = atom.project.getPaths()?[0]
         return unless path? and @isDirectory(path)
-        
+
         config = _path.resolve(path, ".existdb.json")
         if fs.existsSync(config)
             atom.notifications.addWarning("Configuration file already exists: #{config}")
@@ -71,7 +71,7 @@ class ProjectConfig
 
     onConfigChanged: (callback) ->
         @emitter.on("changed", callback)
-    
+
     getConnection: (context, server) ->
         if typeof context == "string" and context.startsWith("exist:")
             config = @getConfig()
@@ -84,7 +84,12 @@ class ProjectConfig
 
     getConfig: (context) ->
         config = @getProjectConfig(context)
-        config ?= @globalConfig
+        @mergeConfigs(config, @globalConfig)
+
+    mergeConfigs: (config, globals) ->
+        newConfig = $.extend({}, config)
+        newConfig.servers = $.extend({}, globals.servers, config.servers)
+        newConfig
 
     initGlobalConfig: () ->
         @globalConfigPath = _path.join(_path.dirname(atom.config.getUserConfigPath()), 'existdb.json')
@@ -112,7 +117,7 @@ class ProjectConfig
     getProjectConfig: (context) ->
         context ?= @paths[0]
         return unless context?
-        
+
         if typeof context == "string"
             path = context
         else if context?
@@ -146,7 +151,7 @@ class ProjectConfig
     useSync: () ->
         for config in @configs
             return true if config.sync?.active
-    
+
     ignoreFile: (file) ->
         config = @getConfig(file)
         for pattern in config?.sync?.ignore
