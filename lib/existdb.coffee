@@ -4,6 +4,7 @@ Config = require './project-config'
 {CompositeDisposable, Range} = require 'atom'
 request = require 'request'
 Provider = require "./provider"
+WatcherControl = require "./watcher-control"
 util = require "./util"
 _path = require 'path'
 cp = require 'child_process'
@@ -29,6 +30,8 @@ module.exports = Existdb =
 
         @symbolsView = new EXistSymbolsView(@projectConfig, @)
 
+        @watcherControl = new WatcherControl(@projectConfig, @)
+
         # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
         @subscriptions = new CompositeDisposable
 
@@ -41,8 +44,6 @@ module.exports = Existdb =
             def = XQUtils.getFunctionDefinition(editor, editor.getCursorBufferPosition())
             @gotoDefinition(def.signature, editor) if def?
 
-        @setupWatcher()
-
     deactivate: ->
         @projectConfig.destroy()
         @subscriptions.dispose()
@@ -50,9 +51,6 @@ module.exports = Existdb =
         @treeView.destroy()
         @statusBarTile?.destroy()
         @statusBarTile = null
-        @watcher?.send({
-            action: "close"
-        })
 
     serialize: ->
         if @treeView?
@@ -60,38 +58,6 @@ module.exports = Existdb =
         else
             @state
 
-    setupWatcher: ->
-        if @watcher?
-            @watcher.send({
-                action: "close"
-            })
-            @watcher.kill()
-        
-        return unless @projectConfig.useSync()
-        
-        @watcher = cp.fork(__dirname + '/watcher.js')
-        process.on('exit', () =>
-            @watcher.kill()
-        )
-        @watcher.on("error", (error) ->
-            atom.notifications.addError(error.message)
-        )
-        @watcher.on("message", (obj) =>
-            # console.log("received message: %o", obj)
-            if obj.action == "status"
-                @updateStatus(obj.message)
-            else if obj.action == "error"
-                atom.notifications.addError(obj.message, { detail: obj.detail, dismissable: true })
-        )
-        @watcher.on("close", () =>
-            @setupWatcher()
-        )
-        @watcher.send({
-            action: "init"
-            configuration: @projectConfig.configs
-        })
-        @projectConfig.onConfigChanged(([configs, globalConfig]) => @watcher.send({action: "init", configuration: configs}))
-        
     gotoFileSymbol: ->
         editor = atom.workspace.getActiveTextEditor()
         @symbolsView.populate(editor)
@@ -123,7 +89,7 @@ module.exports = Existdb =
                 if error? or response.statusCode != 200
                     html = $.parseXML(xhr.responseText)
                     message = $(html).find(".description").text()
-                    
+
                     atom.notifications.addError("Query execution failed: #{$(html).find(".message").text()} (#{status})",
                         { detail: message, dismissable: true })
                 else
