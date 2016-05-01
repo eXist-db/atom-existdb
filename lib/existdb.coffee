@@ -1,7 +1,7 @@
 EXistSymbolsView = require './existdb-view'
 EXistTreeView = require './existdb-tree-view'
 Config = require './project-config'
-{CompositeDisposable, Range} = require 'atom'
+{CompositeDisposable, Range, Emitter} = require 'atom'
 request = require 'request'
 Provider = require "./provider"
 WatcherControl = require "./watcher-control"
@@ -22,15 +22,17 @@ module.exports = Existdb =
 
     activate: (@state) ->
         console.log "Activating eXistdb"
+        @emitter = new Emitter()
+        
         @projectConfig = new Config()
 
+        @watcherControl = new WatcherControl(@projectConfig, @)
+        
         @treeView = new EXistTreeView(@state, @projectConfig, @)
 
         @provider = new Provider(@projectConfig)
 
         @symbolsView = new EXistSymbolsView(@projectConfig, @)
-
-        @watcherControl = new WatcherControl(@projectConfig, @)
 
         # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
         @subscriptions = new CompositeDisposable
@@ -43,6 +45,10 @@ module.exports = Existdb =
             editor = atom.workspace.getActiveTextEditor()
             def = XQUtils.getFunctionDefinition(editor, editor.getCursorBufferPosition())
             @gotoDefinition(def.signature, editor) if def?
+        
+        @tooltips = new CompositeDisposable
+        
+        @emitter.emit("activated")
 
     deactivate: ->
         @projectConfig.destroy()
@@ -51,6 +57,8 @@ module.exports = Existdb =
         @treeView.destroy()
         @statusBarTile?.destroy()
         @statusBarTile = null
+        @emitter.dispose()
+        @tooltips.dispose()
 
     serialize: ->
         if @treeView?
@@ -87,7 +95,7 @@ module.exports = Existdb =
                 clearTimeout(notifTimeout)
                 @updateStatus("")
                 if error? or response.statusCode != 200
-                    html = $.parseXML(xhr.responseText)
+                    html = $.parseXML(body)
                     message = $(html).find(".description").text()
 
                     atom.notifications.addError("Query execution failed: #{$(html).find(".message").text()} (#{status})",
@@ -148,7 +156,7 @@ module.exports = Existdb =
                 uri = uri.substring(uri.indexOf("/db"))
             @treeView.open(path: uri, util.parseURI(editor.getBuffer().getId()).server, onOpen)
         else
-            rootCol = "#{@projectConfig.getConnection(editor).sync.root}/"
+            rootCol = "#{@projectConfig.getConfig(editor).sync.root}/"
             xmldbRoot = "xmldb:exist://#{rootCol}"
             if uri.indexOf(xmldbRoot) is 0
                 uri = uri.substring(xmldbRoot.length)
@@ -267,15 +275,33 @@ module.exports = Existdb =
         return { line: line, column: parseInt(column), msg: msg }
 
     consumeStatusBar: (statusBar) ->
-        statusContainer = document.createElement("span")
+        statusContainer = document.createElement("div")
         statusContainer.className = "existdb-status inline-block"
+
         icon = document.createElement("span")
-        icon.className = "icon icon-database"
+        icon.className = "existdb-sync icon icon-cloud-upload"
+        @tooltips.add atom.tooltips.add(icon, {title: "Database sync active"})
         statusContainer.appendChild(icon)
 
         @statusMsg = document.createElement("span")
-        @statusMsg.className ="status-message badge badge-info"
+        @statusMsg.className ="status-message badge badge-info icon icon-database"
         @statusMsg.textContent = ""
         statusContainer.appendChild(@statusMsg)
+        
+        @emitter.on("activated", () =>
+            @watcherControl.on("status", (message) ->
+                @statusMsg?.textContent = message
+                if message == ""
+                    $(".existdb-sync").removeClass("status-added")
+                else
+                    $(".existdb-sync").addClass("status-added")
+            )
+            @watcherControl.on("activate", (endpoint) ->
+                $(icon).show()
+            )
+            @watcherControl.on("deactivate", (endpoint) ->
+                $(icon).hide()
+            )
+        )
 
         @statusBarTile = statusBar.addRightTile(item: statusContainer, priority: 100)

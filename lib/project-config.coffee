@@ -33,7 +33,7 @@ class ProjectConfig
         @paths = []
         @configs = []
         for dir in paths
-            if @isDirectory(dir)
+            if isDirectory(dir)
                 path = require 'path'
                 configPath = path.resolve(dir, ".existdb.json")
                 if fs.existsSync(configPath)
@@ -59,7 +59,7 @@ class ProjectConfig
 
     createProjectConfig: () ->
         path = atom.project.getPaths()?[0]
-        return unless path? and @isDirectory(path)
+        return unless path? and isDirectory(path)
 
         config = _path.resolve(path, ".existdb.json")
         if fs.existsSync(config)
@@ -84,12 +84,14 @@ class ProjectConfig
 
     getConfig: (context) ->
         config = @getProjectConfig(context)
-        @mergeConfigs(config, @globalConfig)
+        mergeConfigs(config, @globalConfig)
 
-    mergeConfigs: (config, globals) ->
-        newConfig = $.extend({}, config)
-        newConfig.servers = $.extend({}, globals.servers, config.servers)
-        newConfig
+    mergeConfigs = (config, globals) ->
+        if config?
+            newConfig = $.extend({}, config)
+            newConfig.servers = $.extend({}, globals.servers, config.servers)
+            return newConfig
+        return globals
 
     initGlobalConfig: () ->
         @globalConfigPath = _path.join(_path.dirname(atom.config.getUserConfigPath()), 'existdb.json')
@@ -159,7 +161,7 @@ class ProjectConfig
                 console.log("ignoring file %s", file)
                 return true
 
-    isDirectory: (dir) ->
+    isDirectory = (dir) ->
         try return fs.statSync(dir).isDirectory()
         catch then return false
 
