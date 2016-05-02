@@ -33,6 +33,14 @@
             { 'label': 'Deploy Package', 'command': 'existdb:deploy' }
         ]}
     ],
+    '.tree-view .project-root > .list-item': [
+        { 'label': 'eXistdb', 'submenu': [
+            {
+                'label': 'Edit Configuration for Project'
+                'command': 'existdb:create-configuration'
+            }
+        ]}
+    ],
     '.existdb-tree .collection': [
         {
             'label': 'Refresh'

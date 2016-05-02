@@ -58,7 +58,15 @@ class ProjectConfig
         @emitter.emit("changed", [@configs, @globalConfig])
 
     createProjectConfig: () ->
-        path = atom.project.getPaths()?[0]
+        selected =
+            $('.tree-view .selected').map(() ->
+                if this.getPath? then this.getPath() else ''
+            ).get()
+        if selected? and selected.length > 0
+            path = selected[0]
+        else
+            path = atom.project.getPaths()?[0]
+            
         return unless path? and isDirectory(path)
 
         config = _path.resolve(path, ".existdb.json")
