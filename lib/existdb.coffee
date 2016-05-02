@@ -10,6 +10,8 @@ _path = require 'path'
 cp = require 'child_process'
 $ = require 'jquery'
 XQUtils = require './xquery-helper'
+InScopeVariables = require './var-visitor'
+VariableReferences = require './ref-visitor'
 
 COMPILE_MSG_RE = /.*line:?\s(\d+)/i
 
@@ -43,11 +45,26 @@ module.exports = Existdb =
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:toggle-tree-view': => @treeView.toggle()
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:goto-definition': =>
             editor = atom.workspace.getActiveTextEditor()
-            def = XQUtils.getFunctionDefinition(editor, editor.getCursorBufferPosition())
-            @gotoDefinition(def.signature, editor) if def?
+            pos = editor.getCursorBufferPosition()
+            scope = editor.scopeDescriptorForBufferPosition(pos)
+            if scope.getScopesArray().indexOf("meta.definition.variable.name.xquery") > -1
+                ast = editor.getBuffer()._ast
+                return unless ast?
+                
+                def = XQUtils.findNode(ast, { line: pos.row, col: pos.column })
+                if def?
+                    parent = def.getParent
+                    if parent.name == "VarRef" or parent.name == "VarName"
+                        @gotoVarDefinition(parent, editor)
+            else
+                def = XQUtils.getFunctionDefinition(editor, pos)
+                @gotoDefinition(def.signature, editor) if def?
         
         @tooltips = new CompositeDisposable
         
+        atom.workspace.observeTextEditors((editor) =>
+            editor.onDidChangeCursorPosition((ev) => @markInScopeVars(editor, ev))
+        )
         @emitter.emit("activated")
 
     deactivate: ->
@@ -59,6 +76,7 @@ module.exports = Existdb =
         @statusBarTile = null
         @emitter.dispose()
         @tooltips.dispose()
+        @variableMarkers?.destroy()
 
     serialize: ->
         if @treeView?
@@ -118,7 +136,7 @@ module.exports = Existdb =
 
         params = util.modules(@projectConfig, editor, false)
         id = editor.getBuffer().getId()
-        console.log("getting definitions for %s", id)
+        console.log("getting definitions for %s", signature)
         if id.startsWith("exist:")
             connection = @projectConfig.getConnection(id)
         else
@@ -132,13 +150,15 @@ module.exports = Existdb =
             username: connection.user
             password: connection.password
             success: (data) ->
+                name = signature.substring(1)
                 for item in data
-                    if item.name == signature
+                    if item.name == name
                         path = item.path
                         if path.indexOf("xmldb:exist://") == 0
                             path = path.substring(path.indexOf("/db"))
+                        console.log("Loading %s", path)
                         self.open(editor, path, (newEditor) ->
-                            self.gotoLocalDefinition(signature, newEditor)
+                            self.gotoLocalDefinition(name, newEditor)
                         )
                         return
 
@@ -150,6 +170,17 @@ module.exports = Existdb =
                 return true
         false
 
+    gotoVarDefinition: (reference, editor) ->
+        varName = XQUtils.getValue(reference)
+        name = varName.substring(1) if varName.charAt(0) == "$"
+        def = XQUtils.getVariableDef(name, reference)
+        if def?
+            editor.scrollToBufferPosition([def.pos.sl, 0])
+            editor.setCursorBufferPosition([def.pos.sl, def.pos.sc])
+        else
+            varName = if varName.charAt(0) == "$" then varName else "$#{varName}"
+            @gotoDefinition(varName, editor)
+    
     open: (editor, uri, onOpen) ->
         if editor.getBuffer()._remote?
             if uri.indexOf("xmldb:exist://") == 0
@@ -172,6 +203,35 @@ module.exports = Existdb =
     updateStatus: (message) ->
         @statusMsg?.textContent = message
 
+    markInScopeVars: (editor, ev) ->
+        if @variableMarkers?
+            for marker in @variableMarkers?.getMarkers()
+                marker.destroy()
+            @variableMarkers?.destroy()
+        
+        scope = editor.scopeDescriptorForBufferPosition(ev.newBufferPosition)
+        if scope.getScopesArray().indexOf("meta.definition.variable.name.xquery") > -1
+            
+            ast = editor.getBuffer()._ast
+            return unless ast?
+            
+            node = XQUtils.findNode(ast, { line: ev.newBufferPosition.row, col: ev.newBufferPosition.column })
+            if node?
+                varName = node.value
+                parent = node.getParent
+                if parent.name in ["VarRef", "VarName", "Param"]
+                    scope = XQUtils.getVariableScope(varName, parent)
+                    # it might be a global variable, so scan the entire ast if scope is not set
+                    scope ?= ast
+
+                    visitor = new VariableReferences(node, scope)
+                    vars = visitor.getReferences()
+                    if vars?
+                        @variableMarkers = editor.addMarkerLayer()
+                        editor.decorateMarkerLayer(@variableMarkers, type: "highlight", class: "var-reference")
+                        for v in vars when v.name == varName
+                            marker = @variableMarkers.markBufferRange(v.range, persistent: false)
+
     provide: ->
         return @provider
 
@@ -179,15 +239,30 @@ module.exports = Existdb =
         self = this
         providerName: 'hyperclick-xquery'
         getSuggestionForWord: (editor, text, range) ->
-            def = XQUtils.getFunctionDefinition(editor, range.end)
-            if def?
-                return {
-                    range: def.range,
-                    callback: ->
-                        self.gotoDefinition(def.signature, editor)
-                }
+            scope = editor.scopeDescriptorForBufferPosition(range.start)
+            if scope.getScopesArray().indexOf("meta.definition.variable.name.xquery") > -1
+                ast = editor.getBuffer()._ast
+                return unless ast?
+                
+                def = XQUtils.findNode(ast, { line: range.start.row, col: range.start.column })
+                if def?
+                    parent = def.getParent
+                    if parent.name == "VarRef" or parent.name == "VarName"
+                        return {
+                            range: new Range([parent.pos.sl, parent.pos.sc], [parent.pos.el, parent.pos.ec]),
+                            callback: ->
+                                self.gotoVarDefinition(parent, editor)
+                        }
             else
-                console.log("no function found at cursor position: #{text}")
+                def = XQUtils.getFunctionDefinition(editor, range.end)
+                if def?
+                    return {
+                        range: def.range,
+                        callback: ->
+                            self.gotoDefinition(def.signature, editor)
+                    }
+                else
+                    console.log("no function found at cursor position: #{text}")
 
     provideLinter: ->
         provider =

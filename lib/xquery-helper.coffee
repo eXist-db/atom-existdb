@@ -63,6 +63,57 @@ module.exports =
                     matches.push(child)
             return matches
 
+        findBinding: (variable, node, found) ->
+            found ?= []
+            for child in node.children
+                switch child.name
+                    when "InitialClause", "IntermediateClause", "LetClause", "LetBinding", "ForClause", "ForBinding"
+                        @findBinding(variable, child, found)
+                    when "VarName"
+                        name = @getValue(child)
+                        if name == variable
+                            found.push(child)
+            return found
+        
+        getParameter: (param, node) ->
+            for child in node.children
+                switch child.name
+                    when "ParamList", "Param"
+                        found = @getParameter(param, child)
+                        return found if found
+                    when "EQName"
+                        if child.value == param
+                            return child
+            return false
+            
+        getVariableScope: (variable, node) ->
+            switch node.name
+                when "FLWORExpr"
+                    binding = @findBinding(variable, node)
+                    if binding.length > 0
+                        return node
+                when "FunctionDecl"
+                    if @getParameter(variable, node)
+                        return node
+            
+            if node.getParent?
+                return @getVariableScope(variable, node.getParent)
+            return null
+        
+        getVariableDef: (variable, node) ->
+            switch node.name
+                when "FLWORExpr"
+                    bindings = @findBinding(variable, node)
+                    if bindings.length > 0
+                        return bindings.pop()
+                when "FunctionDecl"
+                    param = @getParameter(variable, node)
+                    return param if param
+
+            if node.getParent?
+                return @getVariableDef(variable, node.getParent)
+            return null
+
         getFunctionSignature: (node) ->
             return null unless node.name == "FunctionCall"
             name = @findChild(node, "EQName")

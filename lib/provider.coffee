@@ -84,11 +84,19 @@ module.exports =
                     if vars?
                         regex = new RegExp("^" + prefix)
                         variables = []
-                        for v in vars.sort() when regex.test(v)
+                        for v in vars.sort((a, b) ->
+                            if a.name == b.name
+                                0
+                            else if a.name < b.name
+                                -1
+                            else
+                                1
+                                
+                        ) when regex.test(v.name)
                             def =
-                                text: "$" + v
+                                text: "$" + v.name
                                 type: "variable"
-                                snippet: v
+                                snippet: v.name
                                 replacementPrefix: prefix
                             variables.push(def)
                         return variables
