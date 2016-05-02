@@ -163,6 +163,7 @@ module.exports = Existdb =
                         return
 
     gotoLocalDefinition: (signature, editor) ->
+        signature = if signature.charAt(0) == "$" then signature.substring(1) else signature
         for item in util.parseLocalFunctions(editor)
             if item.name == signature
                 editor.scrollToBufferPosition([item.line, 0])
