@@ -150,7 +150,7 @@ module.exports = Existdb =
             username: connection.user
             password: connection.password
             success: (data) ->
-                name = signature.substring(1)
+                name = if signature.charAt(0) == "$" then signature.substring(1) else signature
                 for item in data
                     if item.name == name
                         path = item.path
