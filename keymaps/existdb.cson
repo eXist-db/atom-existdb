@@ -12,15 +12,18 @@
     'cmd-ctrl-r': 'existdb:file-symbols'
     'cmd-alt-e': 'existdb:toggle-tree-view'
     'cmd-alt-g': 'existdb:goto-definition'
+    'cmd-alt-r': 'existdb:rename-variable'
 
 '.platform-linux atom-workspace':
     'alt-shift-enter': 'existdb:run'
     'ctrl-shift-r': 'existdb:file-symbols'
     'ctrl-alt-e': 'existdb:toggle-tree-view'
     'ctrl-alt-g': 'existdb:goto-definition'
+    'ctrl-shift-r': 'existdb:rename-variable'
 
 '.platform-win32 atom-workspace':
     'alt-shift-enter': 'existdb:run'
     'ctrl-shift-r': 'existdb:file-symbols'
     'ctrl-alt-e': 'existdb:toggle-tree-view'
     'ctrl-alt-g': 'existdb:goto-definition'
+    'ctrl-shift-r': 'existdb:rename-variable'

@@ -21,6 +21,15 @@
             }
         ]
     ],
+    'atom-text-editor .variable.name.xquery': [
+        'label': 'existdb'
+        'submenu': [
+            {
+              'label': 'Rename Variable'
+              'command': 'existdb:rename-variable'
+            }
+        ]
+    ],
     '.tree-view': [
         { 'type': 'separator' }
         { 'label': 'eXistdb', 'submenu': [
@@ -61,6 +70,12 @@
         {
             'label': 'Reindex'
             'command': 'existdb:reindex'
+        }
+    ],
+    '.existdb-tree .icon-package': [
+        {
+            'label': 'Open Package in Browser'
+            'command': 'existdb:open-in-browser'
         }
     ],
     '.existdb-tree .resource': [

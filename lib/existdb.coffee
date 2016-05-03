@@ -43,6 +43,7 @@ module.exports = Existdb =
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:run': => @run(atom.workspace.getActiveTextEditor())
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:file-symbols': => @gotoFileSymbol()
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:toggle-tree-view': => @treeView.toggle()
+        @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:rename-variable': @renameVariable
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:goto-definition': =>
             editor = atom.workspace.getActiveTextEditor()
             pos = editor.getCursorBufferPosition()
@@ -76,7 +77,6 @@ module.exports = Existdb =
         @statusBarTile = null
         @emitter.dispose()
         @tooltips.dispose()
-        @variableMarkers?.destroy()
 
     serialize: ->
         if @treeView?
@@ -205,11 +205,10 @@ module.exports = Existdb =
         @statusMsg?.textContent = message
 
     markInScopeVars: (editor, ev) ->
-        if @variableMarkers?
-            for marker in @variableMarkers?.getMarkers()
-                marker.destroy()
-            @variableMarkers?.destroy()
-        
+        for decoration in editor.getDecorations(class: "var-reference")
+            marker = decoration.getMarker()
+            marker.destroy()
+
         scope = editor.scopeDescriptorForBufferPosition(ev.newBufferPosition)
         if scope.getScopesArray().indexOf("meta.definition.variable.name.xquery") > -1
             
@@ -228,11 +227,16 @@ module.exports = Existdb =
                     visitor = new VariableReferences(node, scope)
                     vars = visitor.getReferences()
                     if vars?
-                        @variableMarkers = editor.addMarkerLayer()
-                        editor.decorateMarkerLayer(@variableMarkers, type: "highlight", class: "var-reference")
                         for v in vars when v.name == varName
-                            marker = @variableMarkers.markBufferRange(v.range, persistent: false)
+                            marker = editor.markBufferRange(v.range, persistent: false)
+                            editor.decorateMarker(marker, type: "highlight", class: "var-reference")
 
+    renameVariable: () ->
+        editor = atom.workspace.getActiveTextEditor()
+        for decoration in editor.getDecorations(class: "var-reference")
+            marker = decoration.getMarker()
+            editor.addSelectionForBufferRange(marker.getBufferRange())
+        
     provide: ->
         return @provider
 

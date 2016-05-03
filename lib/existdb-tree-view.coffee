@@ -10,6 +10,8 @@ tmp = require 'tmp'
 mkdirp = require 'mkdirp'
 {CompositeDisposable} = require 'atom'
 mime = require 'mime'
+{exec} = require('child_process')
+Shell = require('shell')
 
 module.exports =
     class EXistTreeView extends View
@@ -20,6 +22,9 @@ module.exports =
 
         @tmpDir: null
 
+        @installedPkgs: []
+        @packageRoots: {}
+        
         initialize: (@state, @config, @main) ->
             mime.define({
                 "application/xquery": ["xq", "xql", "xquery", "xqm"]
@@ -88,7 +93,9 @@ module.exports =
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:upload-selected': =>
                 @uploadSelected()
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:deploy': @deploy
-
+            @disposables.add atom.commands.add 'atom-workspace', 'existdb:open-in-browser': @openInBrowser
+                    
+                        
         initServerList: ()->
             configs = @config.getConfig()
             @servers.empty()
@@ -109,7 +116,7 @@ module.exports =
             show: @hasParent()
             activeServer: @getActiveServer()
 
-        populate: ->
+        populate: =>
             root = {
                 label: "db",
                 path: "/db",
@@ -119,7 +126,7 @@ module.exports =
                 loaded: true
             }
             @treeView.setRoot(root, false)
-            @checkServer(() => @load(root))
+            @checkServer(() => @installedPackages(() => @load(root)))
 
         load: (item, callback) =>
             self = this
@@ -136,16 +143,26 @@ module.exports =
                     sendImmediately: true
             request(
                 options,
-                (error, response, body) ->
+                (error, response, body) =>
                     if error? or response.statusCode != 200
                         atom.notifications.addWarning("Failed to load database contents", detail: if response? then response.statusMessage else error)
                     else
+                        @checkPkgRoots(body)
                         item.view.setChildren(body)
                         for child in body
                             child.view.onSelect(self.onSelect)
                             child.view.onDblClick(self.onDblClick)
                         callback() if callback
             )
+
+        checkPkgRoots: (items) ->
+            for item in items
+                pkg = @packageRoots[item.path]
+                if pkg?
+                    item.icon = "icon-package"
+                    item.package = pkg
+                if item.children?
+                    @checkPkgRoots(item.children)
 
         removeResource: (selection) =>
             message = if selection.length == 1 then "resource #{selection[0].item.path}" else "#{selection.length} resources"
@@ -405,7 +422,17 @@ module.exports =
                                 @main.updateStatus("")
                         )
                     )
-
+        openInBrowser: (ev) =>
+            item = ev.target.spacePenView.item
+            target = item.path.replace(/^.*?\/([^\/]+)$/, "$1")
+            connection = @config.getConnection(null, @getActiveServer())
+            url = "#{connection.server}/apps/#{target}"
+            process_architecture = process.platform
+            switch process_architecture
+                when 'darwin' then exec ('open "' + url + '"')
+                when 'linux' then exec ('xdg-open "' + url + '"')
+                when 'win32' then Shell.openExternal(url)
+                
         reindex: (parentView) ->
             query = "xmldb:reindex('#{parentView.item.path}')"
             @main.updateStatus("Reindexing #{parentView.item.path}...")
@@ -434,6 +461,7 @@ module.exports =
                 node.clearSelection()
 
         destroy: ->
+            @remove()
             @element.remove()
             @disposables.dispose()
             @tempDir.removeCallback() if @tempDir
@@ -494,6 +522,30 @@ module.exports =
                         onSuccess?(body)
             )
 
+        installedPackages: (onSuccess) =>
+            connection = @config.getConnection(null, @getActiveServer())
+            url = "#{connection.server}/apps/atom-editor/packages.xql"
+            options =
+                uri: url
+                method: "GET"
+                json: true
+                auth:
+                    user: connection.user
+                    pass: connection.password || ""
+                    sendImmediately: true
+            request(
+                options,
+                (error, response, body) =>
+                    if error? or response.statusCode != 200
+                        atom.notifications.addError("Failed to retrieve list of installed packages", detail: if response? then response.statusMessage else error)
+                    @main.updateStatus("")
+                    @installedPkgs = body
+                    @packageRoots = {}
+                    for pkg in @installedPkgs
+                        @packageRoots[pkg.collection] = pkg
+                    onSuccess?()
+            )
+        
         checkServer: (onSuccess) =>
             query = "'http://exist-db.org/apps/atom-editor' = repo:list()"
             @runQuery(query,
