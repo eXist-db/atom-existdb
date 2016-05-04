@@ -24,7 +24,7 @@ module.exports =
 
         @installedPkgs: []
         @packageRoots: {}
-        
+
         initialize: (@state, @config, @main) ->
             mime.define({
                 "application/xquery": ["xq", "xql", "xquery", "xqm"]
@@ -94,8 +94,10 @@ module.exports =
                 @uploadSelected()
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:deploy': @deploy
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:open-in-browser': @openInBrowser
-                    
-                        
+            @disposables.add atom.commands.add 'atom-workspace', 'existdb:sync':
+                (ev) => @sync(ev.target.spacePenView)
+
+
         initServerList: ()->
             configs = @config.getConfig()
             @servers.empty()
@@ -392,36 +394,74 @@ module.exports =
                         done?("#{selected[0].item.path}/#{fileName}")
                     )
 
-        deploy: () =>
-            locals =
+        deploy: (xar, callback) =>
+            if xar? and typeof xar == "string" then paths = [ xar ]
+            paths ?=
                 $('.tree-view .selected').map(() ->
                     if this.getPath? then this.getPath() else ''
                 ).get()
-            if locals? and locals.length > 0
-                for file in locals
+            if paths? and paths.length > 0
+                for file in paths
                     fileName = path.basename(file)
                     targetPath = "/db/system/repo/#{fileName}"
                     @main.updateStatus("Uploading package ...")
                     @save(null, file, path: targetPath, null, () =>
                         @main.updateStatus("Deploying package ...")
-                        connection = @config.getConnection(null, @getActiveServer())
-                        url = "#{connection.server}/apps/atom-editor/packages.xql?action=deploy&xar=#{encodeURIComponent(targetPath)}"
-                        options =
-                            uri: url
-                            method: "GET"
-                            json: true
-                            auth:
-                                user: connection.user
-                                pass: connection.password || ""
-                                sendImmediately: true
-                        request(
-                            options,
-                            (error, response, body) =>
-                                if error? or response.statusCode != 200
-                                    atom.notifications.addError("Failed to deploy package", detail: if response? then response.statusMessage else error)
+                        query = """
+                        xquery version "3.1";
+
+                        declare namespace expath="http://expath.org/ns/pkg";
+                        declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
+                        declare option output:method "json";
+                        declare option output:media-type "application/json";
+
+                        declare variable $repo := "http://demo.exist-db.org/exist/apps/public-repo/modules/find.xql";
+
+                        declare function local:remove($package-url as xs:string) as xs:boolean {
+                            if ($package-url = repo:list()) then
+                                let $undeploy := repo:undeploy($package-url)
+                                let $remove := repo:remove($package-url)
+                                return
+                                    $remove
+                            else
+                                false()
+                        };
+
+                        let $xarPath := "#{targetPath}"
+                        let $meta :=
+                            try {
+                                compression:unzip(
+                                    util:binary-doc($xarPath),
+                                    function($path as xs:anyURI, $type as xs:string,
+                                        $param as item()*) as xs:boolean {
+                                        $path = "expath-pkg.xml"
+                                    },
+                                    (),
+                                    function($path as xs:anyURI, $type as xs:string, $data as item()?,
+                                        $param as item()*) {
+                                        $data
+                                    }, ()
+                                )
+                            } catch * {
+                                error(xs:QName("local:xar-unpack-error"), "Failed to unpack archive")
+                            }
+                        let $package := $meta//expath:package/string(@name)
+                        let $removed := local:remove($package)
+                        let $installed := repo:install-and-deploy-from-db($xarPath, $repo)
+                        return
+                            repo:get-root()
+                        """
+                        @runQuery(query,
+                            (error, response) ->
+                                atom.notifications.addError("Failed to deploy package",
+                                    detail: if response? then response.statusMessage else error)
                                 @main.updateStatus("")
+                            (body) =>
+                                @main.updateStatus("")
+                                callback?()
                         )
                     )
+
         openInBrowser: (ev) =>
             item = ev.target.spacePenView.item
             target = item.path.replace(/^.*?\/([^\/]+)$/, "$1")
@@ -432,7 +472,7 @@ module.exports =
                 when 'darwin' then exec ('open "' + url + '"')
                 when 'linux' then exec ('xdg-open "' + url + '"')
                 when 'win32' then Shell.openExternal(url)
-                
+
         reindex: (parentView) ->
             query = "xmldb:reindex('#{parentView.item.path}')"
             @main.updateStatus("Reindexing #{parentView.item.path}...")
@@ -443,6 +483,22 @@ module.exports =
                     @main.updateStatus("")
                     atom.notifications.addSuccess("Collection #{parentView.item.path} reindexed")
             )
+
+        sync: (parentView) =>
+            dialog = new Dialog("Path to sync to (server-side):", null,
+                (path) =>
+                    query = "file:sync('#{parentView.item.path}', '#{path}', ())"
+                    @main.updateStatus("Sync to directory...")
+                    @runQuery(query,
+                        (error, response) ->
+                            @main.updateStatus("")
+                            atom.notifications.addError("Failed to sync collection #{parentView.item.path}", detail: if response? then response.statusMessage else error)
+                        (body) =>
+                            @main.updateStatus("")
+                            atom.notifications.addSuccess("Collection #{parentView.item.path} synched to directory #{path}")
+                    )
+            )
+            dialog.attach()
 
         onSelect: ({node, item}) =>
             if not item.loaded
@@ -545,28 +601,55 @@ module.exports =
                         @packageRoots[pkg.collection] = pkg
                     onSuccess?()
             )
-        
+
         checkServer: (onSuccess) =>
-            query = "'http://exist-db.org/apps/atom-editor' = repo:list()"
+            xar = @getXAR()
+            query = """
+                xquery version "3.0";
+
+                declare namespace expath="http://expath.org/ns/pkg";
+                declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
+                declare option output:method "json";
+                declare option output:media-type "application/json";
+
+                if ("http://exist-db.org/apps/atom-editor" = repo:list()) then
+                    let $data := repo:get-resource("http://exist-db.org/apps/atom-editor", "expath-pkg.xml")
+                    let $xml := parse-xml(util:binary-to-string($data))
+                    return
+                        if ($xml/expath:package/@version = "#{xar.version}") then
+                            true()
+                        else
+                            $xml/expath:package/@version/string()
+                else
+                    false()
+            """
             @runQuery(query,
                 (error, response) ->
                     atom.notifications.addWarning("Failed to access database", detail: if response? then response.statusMessage else error)
                 (body) =>
-                    if body
+                    if body == true
                         onSuccess?()
                     else
-                        console.log("server-side support app is not installed")
+                        if typeof body == "string"
+                            message = "Installed support app has version #{body}. A newer version (#{xar.version}) is recommended for proper operation. Do you want to install it?"
+                        else
+                            message = "This package requires a small support app to be installed on the eXistdb server. Do you want to install it?"
                         atom.confirm
                             message: "Install server-side support app?"
-                            detailedMessage: "This package requires a small support app to be installed on the eXistdb server. Do you want to install it?"
+                            detailedMessage: message
                             buttons:
                                 Yes: =>
-                                    query = "repo:install-and-deploy('http://exist-db.org/apps/atom-editor', 'http://demo.exist-db.org/exist/apps/public-repo/modules/find.xql')"
-                                    @runQuery(query,
-                                        (error, response) ->
-                                            atom.notifications.addError("Failed to install support app", detail: if response? then response.statusMessage else error)
-                                        (body) ->
-                                            onSuccess?()
-                                    )
-                                No: -> null
+                                    @deploy(xar.path, onSuccess)
+                                No: -> if typeof body == "string" then onSuccess?() else null
             )
+
+        getXAR: () =>
+            pkgDir = atom.packages.resolvePackagePath("existdb")
+            if pkgDir?
+                files = fs.readdirSync(path.join(pkgDir, "resources/db"))
+                for file in files
+                    if file.endsWith(".xar")
+                        return {
+                            version: file.replace(/^.*-([\d\.]+)\.xar/, "$1"),
+                            path: path.join(pkgDir, "resources/db", file)
+                        }

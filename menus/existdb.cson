@@ -76,6 +76,10 @@
         {
             'label': 'Open Package in Browser'
             'command': 'existdb:open-in-browser'
+        },
+        {
+            'label': 'Synchronize to directory'
+            'command': 'existdb:sync'
         }
     ],
     '.existdb-tree .resource': [
