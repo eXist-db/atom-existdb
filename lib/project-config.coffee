@@ -154,7 +154,7 @@ class ProjectConfig
                 server: "localhost"
                 root: ""
                 active: false
-                ignore: ['.existdb.json', '.git/**']
+                ignore: ['.existdb.json', '.git/**', 'node_modules/**', 'bower_components/**']
             }
         }
 
