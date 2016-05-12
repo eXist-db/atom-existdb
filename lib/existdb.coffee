@@ -25,11 +25,11 @@ module.exports = Existdb =
     activate: (@state) ->
         console.log "Activating eXistdb"
         @emitter = new Emitter()
-        
+
         @projectConfig = new Config()
 
         @watcherControl = new WatcherControl(@projectConfig, @)
-        
+
         @treeView = new EXistTreeView(@state, @projectConfig, @)
 
         @provider = new Provider(@projectConfig)
@@ -52,7 +52,7 @@ module.exports = Existdb =
             if scope.getScopesArray().indexOf("meta.definition.variable.name.xquery") > -1
                 ast = editor.getBuffer()._ast
                 return unless ast?
-                
+
                 def = XQUtils.findNode(ast, { line: pos.row, col: pos.column })
                 if def?
                     parent = def.getParent
@@ -61,9 +61,9 @@ module.exports = Existdb =
             else
                 def = XQUtils.getFunctionDefinition(editor, pos)
                 @gotoDefinition(def.signature, editor) if def?
-        
+
         @tooltips = new CompositeDisposable
-        
+
         atom.workspace.observeTextEditors((editor) =>
             editor.onDidChangeCursorPosition((ev) => @markInScopeVars(editor, ev))
         )
@@ -182,7 +182,7 @@ module.exports = Existdb =
         else
             varName = if varName.charAt(0) == "$" then varName else "$#{varName}"
             @gotoDefinition(varName, editor)
-    
+
     open: (editor, uri, onOpen) ->
         if editor.getBuffer()._remote?
             if uri.indexOf("xmldb:exist://") == 0
@@ -214,10 +214,10 @@ module.exports = Existdb =
 
         scope = editor.scopeDescriptorForBufferPosition(ev.newBufferPosition)
         if scope.getScopesArray().indexOf("meta.definition.variable.name.xquery") > -1
-            
+
             ast = editor.getBuffer()._ast
             return unless ast?
-            
+
             node = XQUtils.findNode(ast, { line: ev.newBufferPosition.row, col: ev.newBufferPosition.column })
             if node?
                 varName = node.value
@@ -239,12 +239,12 @@ module.exports = Existdb =
         for decoration in editor.getDecorations(class: "var-reference")
             marker = decoration.getMarker()
             editor.addSelectionForBufferRange(marker.getBufferRange())
-    
+
     expandSelection: () ->
         editor = atom.workspace.getActiveTextEditor()
         ast = editor.getBuffer()._ast
         return unless ast?
-        
+
         selRange = editor.getSelectedBufferRange()
         # try to determine the ast node where the cursor is located
         if selRange.isEmpty()
@@ -270,7 +270,7 @@ module.exports = Existdb =
                     range = new Range([parent.pos.sl, parent.pos.sc], [separator.pos.el, separator.pos.ec])
                 else
                     range = new Range([parent.pos.sl, parent.pos.sc], [parent.pos.el, parent.pos.ec])
-                
+
                 editor.setSelectedBufferRange(range)
 
     provide: ->
@@ -284,7 +284,7 @@ module.exports = Existdb =
             if scope.getScopesArray().indexOf("meta.definition.variable.name.xquery") > -1
                 ast = editor.getBuffer()._ast
                 return unless ast?
-                
+
                 def = XQUtils.findNode(ast, { line: range.start.row, col: range.start.column })
                 if def?
                     parent = def.getParent
@@ -325,7 +325,7 @@ module.exports = Existdb =
             if id.startsWith("exist:")
                 connection = self.projectConfig.getConnection(id)
             else
-                connection = self.projectConfig.getConnection(editor)
+                connection = self.projectConfig.getConnection(editor, self.treeView.getActiveServer())
             $.ajax
                 type: "PUT"
                 url: connection.server + "/apps/atom-editor/compile.xql"
@@ -403,7 +403,7 @@ module.exports = Existdb =
         @statusMsg.className ="status-message badge badge-info icon icon-database"
         @statusMsg.textContent = ""
         statusContainer.appendChild(@statusMsg)
-        
+
         @emitter.on("activated", () =>
             @watcherControl.on("status", (message) ->
                 @statusMsg?.textContent = message

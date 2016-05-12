@@ -66,7 +66,7 @@ class ProjectConfig
             path = selected[0]
         else
             path = atom.project.getPaths()?[0]
-            
+
         return unless path? and isDirectory(path)
 
         config = _path.resolve(path, ".existdb.json")
@@ -86,8 +86,8 @@ class ProjectConfig
             config.servers[util.parseURI(context).server]
         else
             config = @getConfig(context)
-            return config.servers[server] if server?
             return config.servers[config.sync.server] if config.sync?.active and config.sync?.server
+            return config.servers[server] if server?
             config.servers[Object.keys(config.servers)[0]]
 
     getConfig: (context) ->
