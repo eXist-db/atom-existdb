@@ -1,3 +1,8 @@
+## 0.3.3 - Minor Feature Release
+* Refactoring of variables
+* Expand selection to closest XQuery expression
+* Various bug fixes
+
 ## 0.3.2 - Minor Feature Release
 * Highlight other occurrences of a variable in scope when cursor is inside a variable reference
 * Go to variable declaration (via hyperclick or shortcut)
