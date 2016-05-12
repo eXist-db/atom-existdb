@@ -43,8 +43,9 @@ module.exports = Existdb =
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:run': => @run(atom.workspace.getActiveTextEditor())
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:file-symbols': => @gotoFileSymbol()
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:toggle-tree-view': => @treeView.toggle()
-        @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:rename-variable': @renameVariable
-        @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:goto-definition': =>
+        @subscriptions.add atom.commands.add 'atom-text-editor[data-grammar="source xq"]', 'existdb:rename-variable': @renameVariable
+        @subscriptions.add atom.commands.add 'atom-text-editor[data-grammar="source xq"]', 'existdb:expand-selection': @expandSelection
+        @subscriptions.add atom.commands.add 'atom-text-editor[data-grammar="source xq"]', 'existdb:goto-definition': =>
             editor = atom.workspace.getActiveTextEditor()
             pos = editor.getCursorBufferPosition()
             scope = editor.scopeDescriptorForBufferPosition(pos)
@@ -205,6 +206,8 @@ module.exports = Existdb =
         @statusMsg?.textContent = message
 
     markInScopeVars: (editor, ev) ->
+        selRange = editor.getSelectedBufferRange()
+        return unless selRange.isEmpty()
         for decoration in editor.getDecorations(class: "var-reference")
             marker = decoration.getMarker()
             marker.destroy()
@@ -236,7 +239,40 @@ module.exports = Existdb =
         for decoration in editor.getDecorations(class: "var-reference")
             marker = decoration.getMarker()
             editor.addSelectionForBufferRange(marker.getBufferRange())
+    
+    expandSelection: () ->
+        editor = atom.workspace.getActiveTextEditor()
+        ast = editor.getBuffer()._ast
+        return unless ast?
         
+        selRange = editor.getSelectedBufferRange()
+        # try to determine the ast node where the cursor is located
+        if selRange.isEmpty()
+            astNode = XQUtils.findNode(ast, { line: selRange.start.row, col: selRange.start.column })
+            expand = false
+        else
+            astNode = XQUtils.findNodeForRange(ast, { line: selRange.start.row, col: selRange.start.column },
+                { line: selRange.end.row, col: selRange.end.column })
+            expand = true
+
+        if astNode
+            if expand
+                parent = astNode.getParent
+                while parent and (XQUtils.samePosition(astNode.pos, parent.pos) or parent.name in ["StatementsAndOptionalExpr", "LetBinding", "FunctionDecl"])
+                    console.log("parent: %o", parent)
+                    parent = parent.getParent
+            else
+                parent = astNode
+            if parent?
+                if parent.name == "AnnotatedDecl"
+                    p = parent.getParent.children.indexOf(parent)
+                    separator = parent.getParent.children[p + 1]
+                    range = new Range([parent.pos.sl, parent.pos.sc], [separator.pos.el, separator.pos.ec])
+                else
+                    range = new Range([parent.pos.sl, parent.pos.sc], [parent.pos.el, parent.pos.ec])
+                
+                editor.setSelectedBufferRange(range)
+
     provide: ->
         return @provider
 

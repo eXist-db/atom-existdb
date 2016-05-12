@@ -4,14 +4,6 @@
         'label': 'existdb'
         'submenu': [
             {
-              'label': 'Run XQuery'
-              'command': 'existdb:run'
-            },
-            {
-              'label': 'File Symbols'
-              'command': 'existdb:file-symbols'
-            },
-            {
                 'label': 'Upload Current File'
                 'command': 'existdb:upload-current'
             },
@@ -21,9 +13,17 @@
             }
         ]
     ],
-    'atom-text-editor .variable.name.xquery': [
+    'atom-text-editor[data-grammar="source xq"]': [
         'label': 'existdb'
         'submenu': [
+            {
+              'label': 'Run XQuery'
+              'command': 'existdb:run'
+            },
+            {
+              'label': 'File Symbols'
+              'command': 'existdb:file-symbols'
+            },
             {
               'label': 'Rename Variable'
               'command': 'existdb:rename-variable'
@@ -105,6 +105,10 @@
         {
             'label': 'Upload Current File'
             'command': 'existdb:upload-current'
+        },
+        {
+          'label': 'Rename Variable'
+          'command': 'existdb:rename-variable'
         },
         {
             'label': 'Toggle Database View'

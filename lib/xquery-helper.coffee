@@ -22,6 +22,22 @@ module.exports =
             else
                 return null
 
+        findNodeForRange: (ast, start, end) ->
+            p = ast.pos
+            if @inRange(p, start, true) and @inRange(p, end, true)
+                for child in ast.children
+                    n = @findNodeForRange(child, start, end)
+                    return n if n?
+                return ast
+            else
+                return null
+        
+        samePosition: (pos1, pos2) ->
+            return pos1.sl == pos2.sl and
+                pos1.sc == pos2.sc and
+                pos1.el == pos2.el and
+                pos1.ec == pos2.ec
+
         inRange: (p, pos, exclusive) ->
             if (p? and p.sl <= pos.line and pos.line <= p.el)
                 if (p.sl < pos.line and pos.line < p.el)

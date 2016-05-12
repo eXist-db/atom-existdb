@@ -13,6 +13,7 @@
     'cmd-alt-e': 'existdb:toggle-tree-view'
     'cmd-alt-g': 'existdb:goto-definition'
     'cmd-alt-r': 'existdb:rename-variable'
+    'alt-up': 'existdb:expand-selection'
 
 '.platform-linux atom-workspace':
     'alt-shift-enter': 'existdb:run'
@@ -20,6 +21,7 @@
     'ctrl-alt-e': 'existdb:toggle-tree-view'
     'ctrl-alt-g': 'existdb:goto-definition'
     'ctrl-shift-r': 'existdb:rename-variable'
+    'alt-up': 'existdb:expand-selection'
 
 '.platform-win32 atom-workspace':
     'alt-shift-enter': 'existdb:run'
@@ -27,3 +29,4 @@
     'ctrl-alt-e': 'existdb:toggle-tree-view'
     'ctrl-alt-g': 'existdb:goto-definition'
     'ctrl-shift-r': 'existdb:rename-variable'
+    'alt-up': 'existdb:expand-selection'
