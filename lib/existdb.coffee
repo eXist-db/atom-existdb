@@ -259,7 +259,6 @@ module.exports = Existdb =
             if expand
                 parent = astNode.getParent
                 while parent and (XQUtils.samePosition(astNode.pos, parent.pos) or parent.name in ["StatementsAndOptionalExpr", "LetBinding", "FunctionDecl"])
-                    console.log("parent: %o", parent)
                     parent = parent.getParent
             else
                 parent = astNode
@@ -336,6 +335,10 @@ module.exports = Existdb =
                 contentType: "application/octet-stream"
                 username: connection.user
                 password: connection.password
+                error: (xhr, status) ->
+                    messages = []
+                    self.xqlint(editor, chunk, messages)
+                    resolve(messages)
                 success: (data) ->
                     messages = []
 
@@ -357,21 +360,24 @@ module.exports = Existdb =
                         }
                         messages.push(message)
 
-                    if !chunk.isSnippet
-                        xqlint = XQUtils.xqlint(editor)
-                        markers = xqlint?.getWarnings()
-                        errors = xqlint?.getErrors()
-                        if errors? and errors.length > 0
-                            console.log("errors: %o", errors)
-                        for marker in markers
-                            message = {
-                                type: marker.type
-                                text: marker.message
-                                range: new Range([marker.pos.sl, marker.pos.sc], [marker.pos.el, marker.pos.ec])
-                                filePath: editor.getPath()
-                            }
-                            messages.push(message)
+                    self.xqlint(editor, chunk, messages)
                     resolve(messages)
+
+    xqlint: (editor, chunk, messages) ->
+        if !chunk.isSnippet
+            xqlint = XQUtils.xqlint(editor)
+            markers = xqlint?.getWarnings()
+            errors = xqlint?.getErrors()
+            if errors? and errors.length > 0
+                console.log("errors: %o", errors)
+            for marker in markers
+                message = {
+                    type: marker.type
+                    text: marker.message
+                    range: new Range([marker.pos.sl, marker.pos.sc], [marker.pos.el, marker.pos.ec])
+                    filePath: editor.getPath()
+                }
+                messages.push(message)
 
     parseErrMsg: (error) ->
         if error.line?
