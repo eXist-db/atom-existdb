@@ -30,7 +30,7 @@ The package supports two different workflows for developing with eXist:
 1. directly work on the files stored *inside* the database, i.e. all development is done in eXist
 2. Atom is called on a directory on the file system, which resembles an application stored in eXist. Editing is done in the directory but files are automatically synced to the database.
 
-Most eXist users will be familiar with the first approach because this is how the in-browser IDE, eXide, works. For the time being, we thus concentrate on the "everything inside the database" workflow (1). Support for this is well-tested while (2) is still under development.
+Most eXist users will be familiar with the first approach because this is how the in-browser IDE, eXide, works. (2) has advantages if you are working on an existing app, e.g. cloned from git. In this case, you deploy the app once, configure the automatic sync and continue to edit files in the file system. We'll cover this workflow below. See the section on *Automatic Sync*.
 
 ### Getting Started
 
@@ -63,10 +63,9 @@ A right-click on a resource or collection in the database browser opens a contex
 * create new collections or resources
 * delete resources
 * reindex a collection
+* refresh the collection tree
 
-For the time being, the context menu actions apply to one collection or resource only.
-
-### Features
+### Editor Features
 
 #### Autocomplete
 While you type, autocomplete will talk to the database to get a list of functions or variable names which are in scope and may match what you just typed. This includes all functions and variables which are visible to your current code.
@@ -78,20 +77,82 @@ Whenever you change an XQuery file, its contents will be forwarded to eXist and 
 
 In addition to server-side compilation, xqlint will be called in the background to provide hints and alerts for the currently open file. The eXistdb package combines those with the feedback coming from the eXist server.
 
-#### Navigate to a function definition
-The package includes a provider for *hyperclick*: keep the `ctrl` or `command` key pressed while moving the mouse over a function call and it should be highlighted. Clicking on the highlighted range should navigate to the definition of the function, given that the source location of the corresponding XQuery module is known to the XQuery engine (obviously it won't work for the standard Java modules compiled into eXist). If the declaration of the function resides in a different file, it will be opened in a new editor tab.
+#### Navigate to a function or variable definition
+The package includes a provider for *hyperclick*: keep the `ctrl` or `command` key pressed while moving the mouse over a function call or variable name and it should be highlighted. Clicking on the highlighted range should navigate to the definition of the function or variable, given that the source location of the corresponding XQuery module is known to the XQuery engine (obviously it won't work for the standard Java modules compiled into eXist). If the declaration resides in a different file, it will be opened in a new editor tab.
 
-Just in case hyperclick doesn't work for you: place the cursor inside a function call and press `cmd-alt-g` or `ctrl-alt-g`.
+Just in case hyperclick doesn't work for you: place the cursor inside a function call or variable and press `cmd-alt-g` or `ctrl-alt-g`.
 
 #### Symbol browser
 To quickly navigate to the definition of a function or variable, you can also use the symbol browser: press `cmd-ctrl-r` or `ctrl-shift-r` to get a popup showing all functions and variables which are visible to the code currently open in the editor.
 
 Type a few characters to limit the list to functions or variable containing that string sequence. Press return to jump to a highlighted item.
 
+#### Refactoring
+You will notice that if you place the cursor inside a variable name, other occurrences of the same variable within the current scope will be highlighted. To rename the variable, press `alt-cmd-r` or `ctrl-shift-r`. This will select all occurrences and you can type as usual to change them all simultaneously. Once you're done, press `ESC` to get back to the single cursor.
+
+#### Expand Selection
+Pressing `alt-up` will expand the current selection to the closest XQuery expression, respecting XQuery semantics. Repeatedly press `alt-up` to select larger blocks.
+
 #### Execute XQuery scripts
-You can send the XQuery code in the current editor to eXist for execution by pressing `Ctrl-Enter` (mac) or `alt-shift-enter` (windows/linux). The result will be displayed in a new editor tab. Obviously this will only work for XQuery main modules.
+You can send the XQuery code in the current editor to eXist for execution by pressing `ctrl-enter` (mac) or `alt-shift-enter` (windows/linux). The result will be displayed in a new editor tab. Obviously this will only work for XQuery main modules.
 
 ![Executing query](https://raw.githubusercontent.com/wolfgangmm/atom-existdb/master/run.gif)
+
+### Using the File Tree View
+Inside Atom's file tree pane, right clicking will show a subcategory *existdb* in the context menu for files and directories.
+
+* _Upload Selected_ will upload any selected files to the database collection highlighted in the DB view
+* _Deploy Package_ is shown if you click on a `.xar` file (which is eXist's format for installable packages). Selecting it will install the
+xar into the database using eXist's package management features.
+
+### Automatic Sync
+Automatic sync will start a background thread which keeps watching the current project directory for changes. Any change will be immediately uploaded to the corresponding target collection in the database. This means you can work on the files in the file system as you would usually do in Atom, though it even detects changes happening outside the editor, e.g. if you copy or remove files.
+
+To get started, open Atom on the root directory containing the source code of the eXist app you're working on. Atom projects are directory-based, so whatever directory you choose will become the root of your project.
+
+Next, right click on the project root in the file tree and select *Edit Configuration for Current Project* (or use the existdb package menu). This creates a configuration file called `.existdb.json` in your project root:
+
+```json
+{
+    "servers": {
+        "localhost": {
+            "server": "http://localhost:8080/exist",
+            "user": "admin",
+            "password": ""
+        }
+    },
+    "sync": {
+        "server": "localhost",
+        "root": "/db/apps/atom-editor",
+        "active": true,
+        "ignore": [
+            ".existdb.json",
+            ".git/**"
+        ]
+    }
+}
+```
+
+The "servers" configuration is identical to the global config file, but there's an additional property "sync", which configures the mapping between the project directory and a collection on the server:
+
+Property  | Description
+--|--
+server  | the name of the server entry to connect to
+root | the root collection to sync with
+active | sync will only be active if this is set to true
+ignore | an array of file path patterns which should not be synced
+
+### Workflow for Working on a Cloned Repo
+Most of the time you will probably use automatic sync on an eXistdb application package you cloned from git. In this case, the workflow to get started would be as follows:
+
+1. clone the repository into a local directory
+2. build the xar and deploy it into eXistdb
+3. configure automatic sync on the project
+4. start coding
+5. commit your changes from the directory as usually
+
+### Caveats
+Changes made to the project directory while Atom is closed will not be detected and thus not synced to the database. Future versions of the package may contain a "sync upon startup" feature.
 
 ## Development
 
