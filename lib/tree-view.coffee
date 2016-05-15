@@ -53,6 +53,9 @@ module.exports =
     setSelected: () ->
         @toggleClass('selected')
 
+    clearSelection: ->
+        @find(".list-item").removeClass('selected')
+
     onDblClick: (callback) ->
       @emitter.on 'on-dbl-click', callback
       if @item.children
