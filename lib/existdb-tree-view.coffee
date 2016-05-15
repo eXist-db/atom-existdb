@@ -245,6 +245,9 @@ module.exports =
                 resource.view.onDblClick(self.onDblClick)
                 buffer = newEditor.getBuffer()
                 # buffer.getPath = () -> resource.path
+                server = self.getActiveServer()
+                connection = self.config.getConnection(null, server)
+                buffer.getId = () -> self.getXMLDBUri(connection, resource.path)
                 buffer.setPath(tmpFile)
                 resource.editor = newEditor
                 buffer._remote = resource
