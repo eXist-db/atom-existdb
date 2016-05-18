@@ -66,6 +66,7 @@ module.exports = Existdb =
 
         atom.workspace.observeTextEditors((editor) =>
             editor.onDidChangeCursorPosition((ev) => @markInScopeVars(editor, ev))
+            editor.getBuffer().onDidChange(@closeTag)
         )
         @emitter.emit("activated")
 
@@ -204,6 +205,29 @@ module.exports = Existdb =
 
     updateStatus: (message) ->
         @statusMsg?.textContent = message
+
+    closeTag: (ev) ->
+        editor = atom.workspace.getActiveTextEditor()
+        return unless editor? and ev.newText == '/' and editor.getBuffer()._ast?
+        
+        grammar = editor.getGrammar()
+        return unless grammar.scopeName == "source.xq"
+        
+        cursorPos = editor.getLastCursor().getBufferPosition()
+        translatedPos = cursorPos.translate([0, -2])
+        lastTwo = editor.getTextInBufferRange([translatedPos, cursorPos])
+        return unless lastTwo == '</'
+        
+        node = XQUtils.findNode(editor.getBuffer()._ast, { line: ev.oldRange.start.row, col: ev.oldRange.start.column })
+        
+        return unless node?
+        constructor = XQUtils.getAncestor("DirElemConstructor", node)
+        while constructor?
+            qname = XQUtils.findChild(constructor, "QName")
+            if qname?
+                editor.insertText(qname.value + ">")
+                break
+            constructor = XQUtils.getAncestor("DirElemConstructor", constructor)
 
     markInScopeVars: (editor, ev) ->
         selRange = editor.getSelectedBufferRange()

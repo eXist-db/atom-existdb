@@ -58,12 +58,18 @@ module.exports =
                     val += @getValue(child)
             return val
 
-        getAncestor: (type, node) ->
+        getAncestorOrSelf: (type, node) ->
             return node if node.name == type
             if node.getParent?
                 return @getAncestor(type, node.getParent)
             return null
 
+        getAncestor: (type, node) ->
+            if node.getParent?
+                return node.getParent if node.getParent.name == type
+                return @getAncestor(type, node.getParent)
+            return null
+            
         findChild: (node, type) ->
             return null unless node.children
             for child in node.children
@@ -147,7 +153,7 @@ module.exports =
                 return unless ast?
                 node = XQUtils.findNode(ast, { line: point.row, col: point.column })
                 if node?
-                    parent = XQUtils.getAncestor("FunctionCall", node)
+                    parent = XQUtils.getAncestorOrSelf("FunctionCall", node)
                     if parent?
                         signature = XQUtils.getFunctionSignature(parent)
                         if signature?
