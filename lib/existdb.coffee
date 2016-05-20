@@ -21,6 +21,9 @@ module.exports = Existdb =
     provider: undefined
     symbolsView: undefined
     treeView: undefined
+    
+    startTagMarker: undefined
+    endTagMarker: undefined
 
     activate: (@state) ->
         console.log "Activating eXistdb"
@@ -37,8 +40,9 @@ module.exports = Existdb =
         @symbolsView = new EXistSymbolsView(@projectConfig, @)
 
         # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
-        @subscriptions = new CompositeDisposable
-
+        @subscriptions = new CompositeDisposable()
+        @tagSubscriptions = new CompositeDisposable()
+        
         # Register command that toggles this view
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:run': => @run(atom.workspace.getActiveTextEditor())
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:file-symbols': => @gotoFileSymbol()
@@ -65,8 +69,14 @@ module.exports = Existdb =
         @tooltips = new CompositeDisposable
 
         atom.workspace.observeTextEditors((editor) =>
-            editor.onDidChangeCursorPosition((ev) => @markInScopeVars(editor, ev))
-            editor.getBuffer().onDidChange(@closeTag)
+            editor.onDidChangeCursorPosition((ev) =>
+                return if @editTag(editor, ev)
+                @markInScopeVars(editor, ev)
+            )
+            editor.getBuffer().onDidChange((ev) =>
+                @closeTag(ev)
+                editor.getBuffer()._ast = null
+            )
         )
         @emitter.emit("activated")
 
@@ -79,6 +89,8 @@ module.exports = Existdb =
         @statusBarTile = null
         @emitter.dispose()
         @tooltips.dispose()
+        @startTagMarker.destroy() if @startTagMarker?
+        @endTagMarker.destroy() if @endTagMarker?
 
     serialize: ->
         if @treeView?
@@ -229,7 +241,59 @@ module.exports = Existdb =
                 break
             constructor = XQUtils.getAncestor("DirElemConstructor", constructor)
 
+    editTag: (editor, ev) =>
+        reset = =>
+            # clear markers
+            @tagSubscriptions.dispose()
+            @startTagMarker.destroy()
+            @endTagMarker.destroy()
+            @startTagMarker = null
+            @endTagMarker = null
+            @inTag = false
+            false
+        
+        pos = ev.cursor.getBufferPosition()
+        if @inTag and !(@startTagMarker.getBufferRange().containsPoint(pos) or @endTagMarker.getBufferRange().containsPoint(pos))
+            reset()
+        
+        return false if @inTag
+        return false unless editor.getGrammar().scopeName == "source.xq" and editor.getBuffer()._ast?
+        return false if editor.hasMultipleCursors()
+        selRange = editor.getSelectedBufferRange()
+        return false unless selRange.isEmpty()
+        self = this
+        node = XQUtils.findNode(editor.getBuffer()._ast, { line: pos.row, col: pos.column })
+        return unless node?
+        if node.name == "QName" and node.getParent?.name == "DirElemConstructor"
+            tags = XQUtils.findChildren(node.getParent, "QName")
+            if tags? and tags.length == 2 and tags[0].value == tags[1].value
+                @inTag = true
+                @startTagMarker = editor.markBufferRange(new Range([tags[0].pos.sl, tags[0].pos.sc], [tags[0].pos.el, tags[0].pos.ec]))
+                @endTagMarker = editor.markBufferRange(new Range([tags[1].pos.sl, tags[1].pos.sc], [tags[1].pos.el, tags[1].pos.ec]))
+                @tagSubscriptions = new CompositeDisposable()
+                inChange = false
+                @tagSubscriptions.add(@startTagMarker.onDidChange((ev) =>
+                    return if inChange
+                    newTag = editor.getTextInBufferRange(@startTagMarker.getBufferRange())
+                    # if whitespace was added: starting attribute list: reset
+                    return reset() if /^\w+\s+/.test(newTag)
+
+                    inChange = true
+                    editor.setTextInBufferRange(@endTagMarker.getBufferRange(), newTag)
+                    inChange = false
+                ))
+                @tagSubscriptions.add(@endTagMarker.onDidChange((ev) =>
+                    return if inChange
+                    newTag = editor.getTextInBufferRange(@endTagMarker.getBufferRange())
+                    inChange = true
+                    editor.setTextInBufferRange(@startTagMarker.getBufferRange(), newTag)
+                    inChange = false
+                ))
+        return false
+        
     markInScopeVars: (editor, ev) ->
+        return unless editor.getGrammar().scopeName == "source.xq" and editor.getBuffer()._ast?
+        
         selRange = editor.getSelectedBufferRange()
         return unless selRange.isEmpty()
         for decoration in editor.getDecorations(class: "var-reference")
@@ -344,6 +408,8 @@ module.exports = Existdb =
         collectionPaths = util.getCollectionPaths(editor, @projectConfig)
         self = this
         return new Promise (resolve) ->
+            messages = []
+            self.xqlint(editor, chunk, messages)
             id = editor.getBuffer().getId()
             if id.startsWith("exist:")
                 connection = self.projectConfig.getConnection(id)
@@ -360,12 +426,8 @@ module.exports = Existdb =
                 username: connection.user
                 password: connection.password
                 error: (xhr, status) ->
-                    messages = []
-                    self.xqlint(editor, chunk, messages)
                     resolve(messages)
                 success: (data) ->
-                    messages = []
-
                     if data.result == "fail"
                         error = self.parseErrMsg(data.error)
                         range = null
@@ -384,7 +446,6 @@ module.exports = Existdb =
                         }
                         messages.push(message)
 
-                    self.xqlint(editor, chunk, messages)
                     resolve(messages)
 
     xqlint: (editor, chunk, messages) ->

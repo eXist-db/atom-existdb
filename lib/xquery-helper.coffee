@@ -6,6 +6,7 @@ module.exports =
     XQUtils =
         xqlint: (editor) ->
             try
+                editor.getBuffer()._ast = null
                 xqlint = new XQLint(editor.getText(), fileName: editor.getPath())
                 editor.getBuffer()._ast = xqlint.getAST()
                 xqlint

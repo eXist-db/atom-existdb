@@ -7,6 +7,8 @@ This package contains a set of views and providers to support XQuery development
 * syntax highlighting and linting of XQuery scripts (based on [xqlint](https://github.com/wcandillon/xqlint))
 * autocomplete showing all functions and variables which are in scope, including those from imported modules
 * a hyperclick provider to navigate to the definition of a function, even if located in an imported module
+* refactoring of variables
+* XML auto-close tags, tag renaming
 * execution of XQuery scripts within the editor
 * symbols view to navigate to functions and variables which are in scope for the current XQuery
 
@@ -90,8 +92,16 @@ Type a few characters to limit the list to functions or variable containing that
 #### Refactoring
 You will notice that if you place the cursor inside a variable name, other occurrences of the same variable within the current scope will be highlighted. To rename the variable, press `alt-cmd-r` or `ctrl-shift-r`. This will select all occurrences and you can type as usual to change them all simultaneously. Once you're done, press `ESC` to get back to the single cursor.
 
+![XML Editing](https://raw.githubusercontent.com/wolfgangmm/atom-existdb/master/refactor.gif)
+
 #### Expand Selection
 Pressing `alt-up` will expand the current selection to the closest XQuery expression, respecting XQuery semantics. Repeatedly press `alt-up` to select larger blocks.
+
+### XML Editing in XQuery
+* open XML tags are closed automatically if you press `</` inside an XML context
+* changing the name of a tag will also change the corresponding opening or closing tag
+
+![XML Editing](https://raw.githubusercontent.com/wolfgangmm/atom-existdb/master/xml-edit.gif)
 
 #### Execute XQuery scripts
 You can send the XQuery code in the current editor to eXist for execution by pressing `ctrl-enter` (mac) or `alt-shift-enter` (windows/linux). The result will be displayed in a new editor tab. Obviously this will only work for XQuery main modules.
