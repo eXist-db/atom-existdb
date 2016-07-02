@@ -62,7 +62,7 @@ module.exports =
         getAncestorOrSelf: (type, node) ->
             return node if node.name == type
             if node.getParent?
-                return @getAncestor(type, node.getParent)
+                return @getAncestor(type, node)
             return null
 
         getAncestor: (type, node) ->
