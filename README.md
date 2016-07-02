@@ -145,8 +145,8 @@ Next, right click on the project root in the file tree and select *Edit Configur
 
 The "servers" configuration is identical to the global config file, but there's an additional property "sync", which configures the mapping between the project directory and a collection on the server:
 
-Property  | Description
---|--
+Property | Description
+--- | ---
 server  | the name of the server entry to connect to
 root | the root collection to sync with
 active | sync will only be active if this is set to true
