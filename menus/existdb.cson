@@ -48,6 +48,10 @@
                 'label': 'Edit Configuration for Project'
                 'command': 'existdb:create-configuration'
             }
+            # {
+            #     'label': 'Synchronize server <-> local'
+            #     'command': 'existdb:sync-project'
+            # }
         ]}
     ],
     '.existdb-tree .collection': [

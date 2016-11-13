@@ -35,7 +35,8 @@
     "mkdirp": "latest",
     "xqlint": "git://github.com/eXistSolutions/xqlint.git#exist-syntax",
     "hyperclick": "latest",
-    "chokidar": "^1.4.3"
+    "chokidar": "^1.4.3",
+    "walk": "^2.3.9"
   },
   "bundledDependencies": [
     "xqlint"

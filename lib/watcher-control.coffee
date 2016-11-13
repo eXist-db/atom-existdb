@@ -36,6 +36,10 @@ class WatcherControl
             # console.log("received message: %o", obj)
             if obj.action == "status"
                 @main.updateStatus(obj.message)
+                console.log("watcher status: %s", obj.message)
+            else if obj.action == "sync"
+                console.log("sync completed")
+                @main.updateStatus(obj.timestamp)
             else if obj.action == "error"
                 atom.notifications.addError(obj.message, { detail: obj.detail, dismissable: true })
             else if obj.action == "upload"
@@ -58,6 +62,12 @@ class WatcherControl
         })
         @setActive(true)
 
+    sync: (projectConfig) ->
+        @watcher?.send({
+            action: "sync"
+            configuration: projectConfig
+        })
+    
     destroy: () ->
         @watcher?.send({
             action: "close"

@@ -43,7 +43,14 @@ module.exports = Existdb =
         @subscriptions = new CompositeDisposable()
         @tagSubscriptions = new CompositeDisposable()
         
-        # Register command that toggles this view
+        # @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:sync-project': =>
+        #     p = $('.tree-view .selected').map(() ->
+        #         if this.getPath? then this.getPath() else ''
+        #     ).get()[0]
+        #     console.log("sync: %o", p)
+        #     conf = @projectConfig.getProjectConfig(p)
+        #     @watcherControl.sync(conf) if conf?
+            
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:run': => @run(atom.workspace.getActiveTextEditor())
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:file-symbols': => @gotoFileSymbol()
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:toggle-tree-view': => @treeView.toggle()
