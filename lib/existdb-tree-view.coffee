@@ -455,9 +455,9 @@ module.exports =
                             repo:get-root()
                         """
                         @runQuery(query,
-                            (error, response) ->
+                            (error, response) =>
                                 atom.notifications.addError("Failed to deploy package",
-                                    detail: if response? then response.statusMessage else error)
+                                    detail: if response? then response.body else error)
                                 @main.updateStatus("")
                             (body) =>
                                 @main.updateStatus("")

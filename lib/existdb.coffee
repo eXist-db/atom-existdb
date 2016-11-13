@@ -433,11 +433,13 @@ module.exports = Existdb =
                         range = null
                         if error.line > -1
                             line = (error.line - chunk.prologOffset) + chunk.offset
-                            end = editor.lineTextForBufferRow(line).length
-                            range = new Range(
-                                [line, error.column - 1],
-                                [line, end - 1]
-                            )
+                            text = editor.lineTextForBufferRow(line)
+                            if (text?)
+                                end = text.length
+                                range = new Range(
+                                    [line, error.column - 1],
+                                    [line, end - 1]
+                                )
                         message = {
                             type: 'Error',
                             text: error.msg,

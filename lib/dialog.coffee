@@ -6,7 +6,7 @@ class InputDialog extends View
 
   constructor: (@prompt, @text, @callback) ->
     super(@prompt)
-    @focusedElement = null;
+    @focusedElement = null
 
   @content: (prompt) ->
     @div class: "existdb-input-dialog", =>
@@ -18,35 +18,35 @@ class InputDialog extends View
 
   initialize: ->
     if @text?
-      @editor.getModel().setText(@text);
+      @editor.getModel().setText(@text)
 
     if @password
-      @editor.addClass("existdb-password");
+      @editor.addClass("existdb-password")
 
-    @disposables = new CompositeDisposable();
+    @disposables = new CompositeDisposable()
     @disposables.add atom.commands.add @element, "core:confirm", => @confirm()
     @disposables.add atom.commands.add @element, "core:cancel", => @cancel()
 
   attach: ->
-    @focusedElement = $(':focus');
-    @panel = atom.workspace.addModalPanel(item: @element);
-    @editor.focus();
+    @focusedElement = $(':focus')
+    @panel = atom.workspace.addModalPanel(item: @element)
+    @editor.focus()
 
   close: ->
     if (@focusedElement != null) and @focusedElement.isOnDom()
-      @focusedElement.focus();
+      @focusedElement.focus()
     else
-      atom.views.getView(atom.workspace).focus();
+      atom.views.getView(atom.workspace).focus()
 
-    panelToDestroy = @panel;
-    @panel = null;
-    panelToDestroy?.destroy();
-    @disposables.dispose();
+    panelToDestroy = @panel
+    @panel = null
+    panelToDestroy?.destroy()
+    @disposables.dispose()
 
   cancel: ->
-    @close();
-    @callback(null);
+    @close()
+    @callback(null)
 
   confirm: ->
-    @close();
-    @callback(@editor.getModel().getText());
+    @close()
+    @callback(@editor.getModel().getText())

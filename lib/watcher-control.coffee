@@ -25,7 +25,9 @@ class WatcherControl
         return unless @config.useSync()
 
         closing = false
-        @watcher = cp.fork(__dirname + '/watcher.js')
+        @watcher = cp.fork(__dirname + '/watcher.js', { silent: true })
+        @watcher.stderr.on("data", (data) -> console.log(data.toString()))
+        @watcher.stdout.on("data", (data) -> console.log(data.toString()))
         @watcher.on("error", (error) ->
             return if closing
             atom.notifications.addError(error.message, { detail: error.stack, dismissable: true })
