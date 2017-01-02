@@ -21,7 +21,7 @@ module.exports = Existdb =
     provider: undefined
     symbolsView: undefined
     treeView: undefined
-    
+
     startTagMarker: undefined
     endTagMarker: undefined
 
@@ -88,6 +88,7 @@ module.exports = Existdb =
         @emitter.emit("activated")
 
     deactivate: ->
+        @watcherControl.destroy()
         @projectConfig.destroy()
         @subscriptions.dispose()
         @symbolsView.destroy()
@@ -124,6 +125,7 @@ module.exports = Existdb =
             uri: "#{connection.server}/apps/atom-editor/execute"
             method: "POST"
             qs: { "qu": chunk.text, "base": collectionPaths.basePath, "output": "adaptive", "count": 10 }
+            strictSSL: false
             auth:
                 user: connection.user
                 pass: connection.password || ""
@@ -228,17 +230,17 @@ module.exports = Existdb =
     closeTag: (ev) ->
         editor = atom.workspace.getActiveTextEditor()
         return unless editor? and ev.newText == '/' and editor.getBuffer()._ast?
-        
+
         grammar = editor.getGrammar()
         return unless grammar.scopeName == "source.xq"
-        
+
         cursorPos = editor.getLastCursor().getBufferPosition()
         translatedPos = cursorPos.translate([0, -2])
         lastTwo = editor.getTextInBufferRange([translatedPos, cursorPos])
         return unless lastTwo == '</'
-        
+
         node = XQUtils.findNode(editor.getBuffer()._ast, { line: ev.oldRange.start.row, col: ev.oldRange.start.column })
-        
+
         return unless node?
         constructor = XQUtils.getAncestor("DirElemConstructor", node)
         while constructor?
@@ -258,11 +260,11 @@ module.exports = Existdb =
             @endTagMarker = null
             @inTag = false
             false
-        
+
         pos = ev.cursor.getBufferPosition()
         if @inTag and !(@startTagMarker.getBufferRange().containsPoint(pos) or @endTagMarker.getBufferRange().containsPoint(pos))
             reset()
-        
+
         return false if @inTag
         return false unless editor.getGrammar().scopeName == "source.xq" and editor.getBuffer()._ast?
         return false if editor.hasMultipleCursors()
@@ -297,10 +299,10 @@ module.exports = Existdb =
                     inChange = false
                 ))
         return false
-        
+
     markInScopeVars: (editor, ev) ->
         return unless editor.getGrammar().scopeName == "source.xq" and editor.getBuffer()._ast?
-        
+
         selRange = editor.getSelectedBufferRange()
         return unless selRange.isEmpty()
         for decoration in editor.getDecorations(class: "var-reference")

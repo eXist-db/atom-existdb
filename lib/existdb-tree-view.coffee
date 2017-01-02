@@ -94,8 +94,8 @@ module.exports =
                 @uploadSelected()
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:deploy': @deploy
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:open-in-browser': @openInBrowser
-            @disposables.add atom.commands.add 'atom-workspace', 'existdb:sync':
-                (ev) => @sync(ev.target.spacePenView)
+            # @disposables.add atom.commands.add 'atom-workspace', 'existdb:sync':
+            #     (ev) => @sync(ev.target.spacePenView)
 
 
         initServerList: ()->
@@ -139,6 +139,7 @@ module.exports =
                 uri: url
                 method: "GET"
                 json: true
+                strictSSL: false
                 auth:
                     user: connection.user
                     pass: connection.password || ""
@@ -183,6 +184,7 @@ module.exports =
             options =
                 uri: url
                 method: "DELETE"
+                strictSSL: false
                 auth:
                     user: connection.user
                     pass: connection.password || ""
@@ -286,6 +288,7 @@ module.exports =
             options =
                 uri: url
                 method: "GET"
+                strictSSL: false
                 auth:
                     user: connection.user
                     pass: connection.password || ""
@@ -353,6 +356,7 @@ module.exports =
             options =
                 uri: url
                 method: "PUT"
+                strictSSL: false
                 auth:
                     user: connection.user
                     pass: connection.password || ""
@@ -568,6 +572,7 @@ module.exports =
                 uri: url
                 method: "GET"
                 json: true
+                strictSSL: false
                 auth:
                     user: connection.user
                     pass: connection.password || ""
@@ -588,6 +593,7 @@ module.exports =
                 uri: url
                 method: "GET"
                 json: true
+                strictSSL: false
                 auth:
                     user: connection.user
                     pass: connection.password || ""
