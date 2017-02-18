@@ -175,6 +175,6 @@ class ProjectConfig
 
     destroy: ->
         @emitter.dispose()
-        disposable.dispose() for disposable in disposables
+        disposable.dispose() for disposable in @disposables
         fs.unwatchFile(config.configFile) for config in @configs
         fs.unwatchFile(@globalConfigPath)
