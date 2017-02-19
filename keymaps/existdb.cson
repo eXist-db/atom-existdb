@@ -14,7 +14,7 @@
     'ctrl-enter': 'existdb:run'
     'cmd-ctrl-r': 'existdb:file-symbols'
     'cmd-alt-g': 'existdb:goto-definition'
-    'cmd-alt-r': 'existdb:rename-variable'
+    'cmd-alt-v': 'existdb:rename-variable'
     'alt-up': 'existdb:expand-selection'
 
 '.platform-linux atom-workspace':

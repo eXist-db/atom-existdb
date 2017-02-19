@@ -56,7 +56,7 @@ The "servers" object is a dictionary mapping server names to connection details 
 
 If the server-side support app is not installed on the selected server instance, you will be asked to install it. Just answer with "Yes" and the app will be installed automatically.
 
-Once the package is activated, you should see the database browser tree view on either the left or right side of the Atom editor window. If not, please select *Toggle Database View* from the package menu (or press `cmd-alt-e` on mac, `ctrl-alt-e` on windows).
+Once the package is activated, you should see the database browser tree view on either the left or right side of the Atom editor window. If not, please select *Toggle Database View* from the package menu (or press `cmd-ctrl-e` on mac, `ctrl-alt-e` on windows).
 
 Clicking on any resource in the database browser will open the remote file for editing in an Atom editor tab. Behind the scenes, the resource is downloaded and stored into a temporary directory. The connection with the remote resource is preserved though, so pressing save in the editor will reupload the changed content into the database. This should also work across restarts of Atom: the package detects if you had previously opened files stored in eXist and re-downloads them upon restart.
 
@@ -85,12 +85,12 @@ The package includes a provider for *hyperclick*: keep the `ctrl` or `command` k
 Just in case hyperclick doesn't work for you: place the cursor inside a function call or variable and press `cmd-alt-g` or `ctrl-alt-g`.
 
 #### Symbol browser
-To quickly navigate to the definition of a function or variable, you can also use the symbol browser: press `cmd-ctrl-r` or `ctrl-shift-r` to get a popup showing all functions and variables which are visible to the code currently open in the editor.
+To quickly navigate to the definition of a function or variable, you can also use the symbol browser: press `cmd-ctrl-r` or `ctrl-alt-r` to get a popup showing all functions and variables which are visible to the code currently open in the editor.
 
 Type a few characters to limit the list to functions or variable containing that string sequence. Press return to jump to a highlighted item.
 
 #### Refactoring
-You will notice that if you place the cursor inside a variable name, other occurrences of the same variable within the current scope will be highlighted. To rename the variable, press `alt-cmd-r` or `ctrl-shift-r`. This will select all occurrences and you can type as usual to change them all simultaneously. Once you're done, press `ESC` to get back to the single cursor.
+You will notice that if you place the cursor inside a variable name, other occurrences of the same variable within the current scope will be highlighted. To rename the variable, press `cmd-alt-v` or `ctrl-alt-v`. This will select all occurrences and you can type as usual to change them all simultaneously. Once you're done, press `ESC` to get back to the single cursor.
 
 ![XML Editing](https://raw.githubusercontent.com/wolfgangmm/atom-existdb/master/refactor.gif)
 
@@ -185,4 +185,4 @@ cd atom-editor-support
 ant
 ```
 
-This creates `atom-editor-0.1.xar` inside the `build/` directory. Deploy this into your eXist instance using the dashboard.
+This creates `atom-editor-[version].xar` inside the `build/` directory. Deploy this into your eXist instance using the dashboard.
