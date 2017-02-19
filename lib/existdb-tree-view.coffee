@@ -537,7 +537,7 @@ module.exports =
 
         remove: ->
           super
-          @panel.destroy()
+          @panel?.destroy()
 
         # Toggle the visibility of this view
         toggle: ->
