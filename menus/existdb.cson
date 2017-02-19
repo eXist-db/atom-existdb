@@ -46,7 +46,7 @@
         { 'label': 'eXistdb', 'submenu': [
             {
                 'label': 'Edit Configuration for Project'
-                'command': 'existdb:create-configuration'
+                'command': 'existdb:create-configuration-for-selected'
             }
             # {
             #     'label': 'Synchronize server <-> local'
@@ -128,7 +128,7 @@
         },
         {
             'label': 'Edit Configuration for Current Project'
-            'command': 'existdb:create-configuration'
+            'command': 'existdb:create-configuration-for-current'
         }
       ]
     ]

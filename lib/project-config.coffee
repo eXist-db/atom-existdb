@@ -20,7 +20,22 @@ class ProjectConfig
         @initGlobalConfig()
         @load(atom.project.getPaths())
         @disposables.push(atom.project.onDidChangePaths(@load))
-        @disposables.push(atom.commands.add('atom-workspace', 'existdb:create-configuration': => @createProjectConfig()))
+        @disposables.push(atom.commands.add('atom-workspace', 'existdb:create-configuration-for-selected': =>
+            selected =
+                $('.tree-view .selected').map(() ->
+                    if this.getPath? then this.getPath() else ''
+                ).get()
+            if selected? and selected.length > 0
+                path = @getProjectConfigPath(selected[0])
+            else
+                path = atom.project.getPaths()?[0]
+            @createProjectConfig(path))
+        )
+        @disposables.push(atom.commands.add('atom-workspace', 'existdb:create-configuration-for-current': =>
+            editor = atom.workspace.getActiveTextEditor()
+            path = @getProjectConfigPath(editor.getPath())
+            @createProjectConfig(path))
+        )
         @disposables.push(atom.commands.add('atom-workspace', 'existdb:edit-configuration': =>
             atom.workspace.open(@globalConfigPath)
         ))
@@ -57,21 +72,12 @@ class ProjectConfig
                         atom.notifications.addInfo('Error parsing .existdb.json.', detail: e)
         @emitter.emit("changed", [@configs, @globalConfig])
 
-    createProjectConfig: () ->
-        selected =
-            $('.tree-view .selected').map(() ->
-                if this.getPath? then this.getPath() else ''
-            ).get()
-        if selected? and selected.length > 0
-            path = selected[0]
-        else
-            path = atom.project.getPaths()?[0]
-
+    createProjectConfig: (path) ->
         return unless path? and isDirectory(path)
 
         config = _path.resolve(path, ".existdb.json")
         if fs.existsSync(config)
-            atom.notifications.addWarning("Configuration file already exists: #{config}")
+            atom.workspace.open(config)
             return
         fs.writeFileSync(config, JSON.stringify(@getDefaults(), null, 4))
         atom.workspace.open(config)
@@ -140,6 +146,12 @@ class ProjectConfig
             @configs[0]
         else
             null
+
+    getProjectConfigPath: (path) ->
+        if path?
+            for config in @configs
+                if path.length >= config.path.length && path.substring(0, config.path.length) == config.path
+                    return config.path
 
     getDefaults: () ->
         {
