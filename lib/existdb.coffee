@@ -376,6 +376,7 @@ module.exports = Existdb =
         self = this
         providerName: 'hyperclick-xquery'
         getSuggestionForWord: (editor, text, range) ->
+            return unless editor.getGrammar().scopeName == "source.xq"
             scope = editor.scopeDescriptorForBufferPosition(range.start)
             if scope.getScopesArray().indexOf("meta.definition.variable.name.xquery") > -1
                 ast = editor.getBuffer()._ast
