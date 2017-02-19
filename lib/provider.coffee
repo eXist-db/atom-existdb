@@ -24,12 +24,14 @@ module.exports =
 
             if prefix.indexOf('$') != 0 and prefix.length < MIN_LENGTH then return []
 
-            params = util.modules(@config, editor)
-            params.push("prefix=" + prefix)
             variables = @getInScopeVariables(editor, prefix)
+
             # assume we're looking for a local variable if no namespace prefix is present
             return variables if /^$[^:]+$/.test(prefix)
-            
+
+            params = util.modules(@config, editor)
+            params.push("prefix=" + prefix)
+
             localFuncs = @getLocalSuggestions(editor, prefix)
             self = this
             return new Promise (resolve) ->
@@ -91,7 +93,7 @@ module.exports =
                                 -1
                             else
                                 1
-                                
+
                         ) when regex.test(v.name)
                             def =
                                 text: "$" + v.name

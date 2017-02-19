@@ -42,7 +42,7 @@ module.exports = Existdb =
         # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
         @subscriptions = new CompositeDisposable()
         @tagSubscriptions = new CompositeDisposable()
-        
+
         # @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:sync-project': =>
         #     p = $('.tree-view .selected').map(() ->
         #         if this.getPath? then this.getPath() else ''
@@ -50,7 +50,7 @@ module.exports = Existdb =
         #     console.log("sync: %o", p)
         #     conf = @projectConfig.getProjectConfig(p)
         #     @watcherControl.sync(conf) if conf?
-            
+
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:run': => @run(atom.workspace.getActiveTextEditor())
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:file-symbols': => @gotoFileSymbol()
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:toggle-tree-view': => @treeView.toggle()
@@ -82,7 +82,7 @@ module.exports = Existdb =
             )
             editor.getBuffer().onDidChange((ev) =>
                 @closeTag(ev)
-                editor.getBuffer()._ast = null
+                # editor.getBuffer()._ast = null
             )
         )
         @emitter.emit("activated")
@@ -407,6 +407,7 @@ module.exports = Existdb =
             grammarScopes: ['source.xq']
             scope: 'file'
             lintOnFly: true
+            # lintOnFlyInterval: 200,
             lint: (textEditor) =>
                 return @lintOpenFile(textEditor)
 
@@ -466,7 +467,7 @@ module.exports = Existdb =
             errors = xqlint?.getErrors()
             if errors? and errors.length > 0
                 console.log("errors: %o", errors)
-            for marker in markers
+            for marker in markers?
                 message = {
                     type: marker.type
                     text: marker.message
