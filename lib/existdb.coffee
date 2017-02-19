@@ -51,8 +51,8 @@ module.exports = Existdb =
         #     conf = @projectConfig.getProjectConfig(p)
         #     @watcherControl.sync(conf) if conf?
 
-        @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:run': => @run(atom.workspace.getActiveTextEditor())
-        @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:file-symbols': => @gotoFileSymbol()
+        @subscriptions.add atom.commands.add 'atom-text-editor', 'existdb:run': => @run(atom.workspace.getActiveTextEditor())
+        @subscriptions.add atom.commands.add 'atom-text-editor', 'existdb:file-symbols': => @gotoFileSymbol()
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:toggle-tree-view': => @treeView.toggle()
         @subscriptions.add atom.commands.add 'atom-text-editor[data-grammar="source xq"]', 'existdb:rename-variable': @renameVariable
         @subscriptions.add atom.commands.add 'atom-text-editor[data-grammar="source xq"]', 'existdb:expand-selection': @expandSelection

@@ -8,25 +8,31 @@
 # For more detailed documentation see
 # https://atom.io/docs/latest/behind-atom-keymaps-in-depth
 '.platform-darwin atom-workspace':
+    'cmd-ctrl-e': 'existdb:toggle-tree-view'
+
+'.platform-darwin atom-text-editor[data-grammar="source xq"]':
     'ctrl-enter': 'existdb:run'
     'cmd-ctrl-r': 'existdb:file-symbols'
-    'cmd-alt-e': 'existdb:toggle-tree-view'
     'cmd-alt-g': 'existdb:goto-definition'
     'cmd-alt-r': 'existdb:rename-variable'
     'alt-up': 'existdb:expand-selection'
 
 '.platform-linux atom-workspace':
-    'alt-shift-enter': 'existdb:run'
-    'ctrl-shift-r': 'existdb:file-symbols'
     'ctrl-alt-e': 'existdb:toggle-tree-view'
+
+'.platform-linux atom-text-editor[data-grammar="source xq"]':
+    'alt-shift-enter': 'existdb:run'
+    'ctrl-alt-r': 'existdb:file-symbols'
     'ctrl-alt-g': 'existdb:goto-definition'
-    'ctrl-shift-r': 'existdb:rename-variable'
+    'ctrl-alt-v': 'existdb:rename-variable'
     'alt-up': 'existdb:expand-selection'
 
 '.platform-win32 atom-workspace':
-    'alt-shift-enter': 'existdb:run'
-    'ctrl-shift-r': 'existdb:file-symbols'
     'ctrl-alt-e': 'existdb:toggle-tree-view'
+
+'.platform-win32 atom-text-editor[data-grammar="source xq"]':
+    'alt-shift-enter': 'existdb:run'
+    'ctrl-alt-r': 'existdb:file-symbols'
     'ctrl-alt-g': 'existdb:goto-definition'
-    'ctrl-shift-r': 'existdb:rename-variable'
+    'ctrl-alt-v': 'existdb:rename-variable'
     'alt-up': 'existdb:expand-selection'
