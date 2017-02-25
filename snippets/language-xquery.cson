@@ -52,7 +52,7 @@
     'body': 'module namespace ${1:ns} = "${2:http://www.example.com}";\n\n${3}'
   'xquery':
     'prefix': 'xquery'
-    'body': 'xquery version "${1:3.0}";\n\n${2}'
+    'body': 'xquery version "${1:3.1}";\n\n${2}'
   'tei':
     'prefix': 'tei'
     'body': 'declare namespace tei="http://www.tei-c.org/ns/1.0";\n${2}'
