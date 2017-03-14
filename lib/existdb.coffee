@@ -407,7 +407,7 @@ module.exports = Existdb =
             name: 'xqlint'
             grammarScopes: ['source.xq']
             scope: 'file'
-            lintOnFly: true
+            lintsOnChange: true
             # lintOnFlyInterval: 200,
             lint: (textEditor) =>
                 return @lintOpenFile(textEditor)
@@ -441,7 +441,7 @@ module.exports = Existdb =
                 success: (data) ->
                     if data.result == "fail"
                         error = self.parseErrMsg(data.error)
-                        range = null
+                        range = new Range([0, 0], [0, 0])
                         if error.line > -1
                             line = (error.line - chunk.prologOffset) + chunk.offset
                             text = editor.lineTextForBufferRow(line)
@@ -452,10 +452,12 @@ module.exports = Existdb =
                                     [line, end - 1]
                                 )
                         message = {
-                            type: 'Error',
-                            text: error.msg,
-                            range: range,
-                            filePath: editor.getPath()
+                            severity: "error",
+                            excerpt: error.msg,
+                            location: {
+                                position: range,
+                                file: editor.getPath()
+                            }
                         }
                         messages.push(message)
 
@@ -468,14 +470,18 @@ module.exports = Existdb =
             errors = xqlint?.getErrors()
             if errors? and errors.length > 0
                 console.log("errors: %o", errors)
-            for marker in markers?
-                message = {
-                    type: marker.type
-                    text: marker.message
-                    range: new Range([marker.pos.sl, marker.pos.sc], [marker.pos.el, marker.pos.ec])
-                    filePath: editor.getPath()
-                }
-                messages.push(message)
+            if markers?
+                for marker in markers
+                    m = /^\[(.*)].*$/.exec(marker.message)
+                    code = if m.length == 2 then m[1] else ""
+                    message = {
+                        severity: "warning"
+                        location:
+                            file: editor.getPath()
+                            position: new Range([marker.pos.sl, marker.pos.sc], [marker.pos.el, marker.pos.ec])
+                        excerpt: marker.message
+                    }
+                    messages.push(message)
 
     parseErrMsg: (error) ->
         if error.line?
