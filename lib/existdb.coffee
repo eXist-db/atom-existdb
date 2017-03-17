@@ -441,7 +441,7 @@ module.exports = Existdb =
                 success: (data) ->
                     if data.result == "fail"
                         error = self.parseErrMsg(data.error)
-                        range = new Range([0, 0], [0, 0])
+                        range = null
                         if error.line > -1
                             line = (error.line - chunk.prologOffset) + chunk.offset
                             text = editor.lineTextForBufferRow(line)
@@ -451,6 +451,9 @@ module.exports = Existdb =
                                     [line, error.column - 1],
                                     [line, end - 1]
                                 )
+                        if not range?
+                            text = editor.lineTextForBufferRow(0)
+                            range = new Range([0, 0], [0, text.length - 1])
                         message = {
                             severity: "error",
                             excerpt: error.msg,
