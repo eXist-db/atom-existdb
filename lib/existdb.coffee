@@ -93,8 +93,6 @@ module.exports = Existdb =
         @subscriptions.dispose()
         @symbolsView.destroy()
         @treeView.destroy()
-        @statusBarTile?.destroy()
-        @statusBarTile = null
         @emitter.dispose()
         @tooltips.dispose()
         @startTagMarker.destroy() if @startTagMarker?
@@ -225,7 +223,10 @@ module.exports = Existdb =
             promise.then((newEditor) -> onOpen?(newEditor))
 
     updateStatus: (message) ->
-        @statusMsg?.textContent = message
+        if message == ""
+            @busySignal.clear()
+        else
+            @busySignal.add(message);
 
     closeTag: (ev) ->
         editor = atom.workspace.getActiveTextEditor()
@@ -503,34 +504,21 @@ module.exports = Existdb =
         column = error.column || 0
         return { line: line, column: parseInt(column), msg: msg }
 
-    consumeStatusBar: (statusBar) ->
-        statusContainer = document.createElement("div")
-        statusContainer.className = "existdb-status inline-block"
-
-        icon = document.createElement("span")
-        icon.className = "existdb-sync icon icon-cloud-upload"
-        @tooltips.add atom.tooltips.add(icon, {title: "Database sync active"})
-        statusContainer.appendChild(icon)
-
-        @statusMsg = document.createElement("span")
-        @statusMsg.className ="status-message badge badge-info icon icon-database"
-        @statusMsg.textContent = ""
-        statusContainer.appendChild(@statusMsg)
+    consumeSignal: (registry) ->
+        @busySignal = registry.create()
+        @subscriptions.add(@busySignal)
 
         @emitter.on("activated", () =>
             @watcherControl.on("status", (message) ->
-                @statusMsg?.textContent = message
                 if message == ""
-                    $(".existdb-sync").removeClass("status-added")
+                    @busySignal.clear()
                 else
-                    $(".existdb-sync").addClass("status-added")
+                    @busySignal.add(message)
             )
             @watcherControl.on("activate", (endpoint) ->
-                $(icon).show()
+                @busySignal.add("File watcher activated")
             )
             @watcherControl.on("deactivate", (endpoint) ->
-                $(icon).hide()
+                @busySignal.clear()
             )
         )
-
-        @statusBarTile = statusBar.addRightTile(item: statusContainer, priority: 100)

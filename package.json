@@ -63,9 +63,9 @@
     }
   },
   "consumedServices": {
-    "status-bar": {
+    "busy-signal": {
       "versions": {
-        "^1.0.0": "consumeStatusBar"
+        "1.0.0": "consumeSignal"
       }
     }
   },
