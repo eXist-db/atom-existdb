@@ -10,7 +10,7 @@
 .existdb-tree {
     display: flex;
     flex-direction: column;
-    
+
     select {
         flex-grow: 0;
         flex-shrink: 0;
@@ -25,78 +25,11 @@
 }
 
 .existdb-tree-view {
-  flex-grow: 1;
-  flex-shrink: 0;
-  min-width: -webkit-min-content;
-  //min-height: 100%;
   padding-left: @component-padding;
   padding-right: @component-padding;
-  position: relative;
+  overflow: auto;
 
   .header {
     position: relative;
   }
-
-  .tree-view-scroller {
-      display: flex;
-    flex-direction: column;
-    flex: 1;
-    width: 100%;
-    overflow: auto;
-  }
-
-  .list-tree {
-    position: static;
-  }
-}
-
-.existdb-tree-view-resizer {
-  position: relative;
-  overflow: hidden;
-  cursor: default;
-  -webkit-user-select: none;
-  min-width: 100px;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-
-  // use these classes to re-order
-  // using a value in-between is fine too, e.g. order: -3;
-  & > .order--start  { order: -10; }
-  & > .order--center { order:   0; }
-  & > .order--end    { order:  10; }
-
-  .tree-view-resize-handle {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 10px;
-    cursor: col-resize;
-    z-index: 3;
-  }
-
-  &[data-show-on-right-side='true'] {
-    .tree-view-resize-handle {
-      left: -5px;
-    }
-  }
-
-  &[data-show-on-right-side='false'] {
-    .tree-view-resize-handle {
-      right: -5px;
-    }
-  }
-}
-
-.existdb-status {
-    .status-message {
-        margin-left: 4px;
-        
-        animation: blinker 1.2s cubic-bezier(.5, 0, 1, 1) infinite alternate;
-
-        @keyframes blinker {
-          from { opacity: 1; }
-          to { opacity: 0; }
-        }
-    }
 }

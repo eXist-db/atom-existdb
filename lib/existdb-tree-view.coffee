@@ -1,4 +1,3 @@
-{$, jQuery, View} = require "atom-space-pen-views"
 {TreeView} = require "./tree-view"
 XQUtils = require './xquery-helper'
 Dialog = require './dialog'
@@ -14,18 +13,14 @@ mime = require 'mime'
 Shell = require('shell')
 
 module.exports =
-    class EXistTreeView extends View
-
-        @content: ->
-            @div class: "existdb-tree block tool-panel focusable-panel", =>
-                @select class: "existdb-database-select", outlet: 'servers'
+    class EXistTreeView
 
         @tmpDir: null
 
         @installedPkgs: []
         @packageRoots: {}
 
-        initialize: (@state, @config, @main) ->
+        constructor: (@state, @config, @main) ->
             mime.define({
                 "application/xquery": ["xq", "xql", "xquery", "xqm"]
             })
@@ -43,13 +38,19 @@ module.exports =
             )
 
             @disposables = new CompositeDisposable()
-            @treeView = new TreeView
 
-            @append(@treeView)
+            @element = document.createElement("div")
+            @element.classList.add("existdb-tree", "block", "tool-panel", "focusable-panel")
+            @select = document.createElement("select")
+            @select.classList.add("existdb-database-select")
+            @element.appendChild(@select)
+
+            @treeView = new TreeView
+            @element.appendChild(@treeView.element)
 
             @initServerList()
             @config.activeServer = @getActiveServer()
-            @servers.on("change", =>
+            @select.addEventListener('change', =>
                 @populate()
                 @config.activeServer = @getActiveServer()
             )
@@ -69,17 +70,16 @@ module.exports =
             #     if uri.startsWith "xmldb:exist:"
             #         new EXistEditor()
 
-            @treeView.width(@state.width) if @state?.width
             @toggle() if @state?.show
 
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:reindex':
-                (ev) => @reindex(ev.target.spacePenView)
+                (ev) => @reindex(ev.target.item)
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:reload-tree-view':
-                (ev) => @load(ev.target.spacePenView.item)
+                (ev) => @load(ev.target.item)
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:new-file':
-                (ev) => @newFile(ev.target.spacePenView)
+                (ev) => @newFile(ev.target.item)
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:new-collection':
-                (ev) => @newCollection(ev.target.spacePenView)
+                (ev) => @newCollection(ev.target.item)
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:remove-resource':
                 (ev) =>
                     selection = @treeView.getSelected()
@@ -96,11 +96,27 @@ module.exports =
             @disposables.add atom.commands.add 'atom-workspace', 'existdb:open-in-browser': @openInBrowser
             # @disposables.add atom.commands.add 'atom-workspace', 'existdb:sync':
             #     (ev) => @sync(ev.target.spacePenView)
+            @populate()
+            console.log("tree view initialized")
 
+        getDefaultLocation: () => 'right'
+
+        getAllowedLocations: () => ['left', 'right']
+
+        getURI: () -> 'atom:existdb/tree-view'
+
+        getTitle: () -> 'eXist Database'
+
+        hasParent: () ->
+            @element.parentNode?
+
+        # Toggle the visibility of this view
+        toggle: ->
+            atom.workspace.toggle(this)
 
         initServerList: ()->
             configs = @config.getConfig()
-            @servers.empty()
+            @select.innerHTML = "";
             for name, config of configs.servers
                 option = document.createElement("option")
                 option.value = name
@@ -108,13 +124,12 @@ module.exports =
                 if name == @state?.activeServer
                     option.selected = true
                 option.appendChild(document.createTextNode(name))
-                @servers.append(option)
+                @select.appendChild(option)
 
         getActiveServer: ->
-            @servers.val()
+            @select.options[@select.selectedIndex].value
 
         serialize: ->
-            width: @treeView.width()
             show: @hasParent()
             activeServer: @getActiveServer()
 
@@ -127,6 +142,7 @@ module.exports =
                 children: [],
                 loaded: true
             }
+            console.log("populating %o", root)
             @treeView.setRoot(root, false)
             @checkServer(() => @installedPackages(() => @load(root)))
 
@@ -168,14 +184,14 @@ module.exports =
                     @checkPkgRoots(item.children)
 
         removeResource: (selection) =>
-            message = if selection.length == 1 then "resource #{selection[0].item.path}" else "#{selection.length} resources"
+            message = if selection.length == 1 then "resource #{selection[0].path}" else "#{selection.length} resources"
             atom.confirm
                 message: "Delete resource?"
                 detailedMessage: "Are you sure you want to delete #{message}?"
                 buttons:
                     Yes: =>
                         for item in selection
-                            @doRemove(item.item)
+                            @doRemove(item)
                     No: null
 
         doRemove: (resource) =>
@@ -200,12 +216,12 @@ module.exports =
                         resource.view.delete()
             )
 
-        newFile: (parentView) =>
-            dialog = new Dialog("Enter a name for the new resource:", null, (name) => @createFile(parentView, name) if name?)
+        newFile: (item) =>
+            dialog = new Dialog("Enter a name for the new resource:", null, (name) => @createFile(item, name) if name?)
             dialog.attach()
 
-        newCollection: (parentView) =>
-            parent = parentView.item.path
+        newCollection: (item) =>
+            parent = item.path
             dialog = new Dialog("Enter a name for the new collection:", null, (name) =>
                 if name?
                     query = "xmldb:create-collection('#{parent}', '#{name}')"
@@ -221,16 +237,16 @@ module.exports =
                                 type: "collection"
                                 icon: "icon-file-directory"
                             }
-                            parentView.addChild(collection)
+                            item.view.addChild(collection)
                             collection.view.onSelect(@onSelect)
                             collection.view.onDblClick(@onDblClick)
                     )
             )
             dialog.attach()
 
-        createFile: (parentView, name) ->
+        createFile: (item, name) ->
             self = this
-            collection = parentView.item.path
+            collection = item.path
             resource =
                 path: "#{collection}/#{name}"
                 type: "resource"
@@ -242,7 +258,7 @@ module.exports =
 
             promise = atom.workspace.open(null)
             promise.then((newEditor) ->
-                parentView.addChild(resource)
+                item.view.addChild(resource)
                 resource.view.onSelect(self.onSelect)
                 resource.view.onDblClick(self.onDblClick)
                 buffer = newEditor.getBuffer()
@@ -385,28 +401,28 @@ module.exports =
             @save(null, editor.getPath(), path: "#{selected[0].item.path}/#{fileName}", null, () => @load(selected[0].item))
 
         uploadSelected: (done) ->
-            locals =
-                $('.tree-view .selected').map(() ->
-                    if this.getPath? then this.getPath() else ''
-                ).get()
+            locals = []
+            for file in document.querySelectorAll('.tree-view .selected')
+                if file.getPath? then locals.push(file.getPath())
+
             if locals? and locals.length > 0
                 selected = @treeView.getSelected()
-                if selected.length != 1 or selected[0].item.type == "resource"
+                if selected.length != 1 or selected[0].type == "resource"
                     atom.notifications.addError("Please select a single target collection for the upload in the database tree view")
                     return
                 for file in locals
                     fileName = path.basename(file)
-                    @save(null, file, path: "#{selected[0].item.path}/#{fileName}", null, () =>
-                        @load(selected[0].item)
-                        done?("#{selected[0].item.path}/#{fileName}")
+                    @save(null, file, path: "#{selected[0].path}/#{fileName}", null, () =>
+                        @load(selected[0])
+                        done?("#{selected[0].path}/#{fileName}")
                     )
 
         deploy: (xar, callback) =>
             if xar? and typeof xar == "string" then paths = [ xar ]
-            paths ?=
-                $('.tree-view .selected').map(() ->
-                    if this.getPath? then this.getPath() else ''
-                ).get()
+            if not paths?
+                paths = []
+                for file in document.querySelectorAll('.tree-view .selected')
+                    if file.getPath? then paths.push(file.getPath())
             if paths? and paths.length > 0
                 for file in paths
                     fileName = path.basename(file)
@@ -480,29 +496,29 @@ module.exports =
                 when 'linux' then exec ('xdg-open "' + url + '"')
                 when 'win32' then Shell.openExternal(url)
 
-        reindex: (parentView) ->
-            query = "xmldb:reindex('#{parentView.item.path}')"
-            @main.updateStatus("Reindexing #{parentView.item.path}...")
+        reindex: (item) ->
+            query = "xmldb:reindex('#{item.path}')"
+            @main.updateStatus("Reindexing #{item.path}...")
             @runQuery(query,
                 (error, response) ->
-                    atom.notifications.addError("Failed to reindex collection #{parentView.item.path}", detail: if response? then response.statusMessage else error)
+                    atom.notifications.addError("Failed to reindex collection #{item.path}", detail: if response? then response.statusMessage else error)
                 (body) =>
                     @main.updateStatus("")
-                    atom.notifications.addSuccess("Collection #{parentView.item.path} reindexed")
+                    atom.notifications.addSuccess("Collection #{item.path} reindexed")
             )
 
-        sync: (parentView) =>
+        sync: (item) =>
             dialog = new Dialog("Path to sync to (server-side):", null,
                 (path) =>
-                    query = "file:sync('#{parentView.item.path}', '#{path}', ())"
+                    query = "file:sync('#{item.path}', '#{path}', ())"
                     @main.updateStatus("Sync to directory...")
                     @runQuery(query,
                         (error, response) ->
                             @main.updateStatus("")
-                            atom.notifications.addError("Failed to sync collection #{parentView.item.path}", detail: if response? then response.statusMessage else error)
+                            atom.notifications.addError("Failed to sync collection #{item.path}", detail: if response? then response.statusMessage else error)
                         (body) =>
                             @main.updateStatus("")
-                            atom.notifications.addSuccess("Collection #{parentView.item.path} synched to directory #{path}")
+                            atom.notifications.addSuccess("Collection #{item.path} synched to directory #{path}")
                     )
             )
             dialog.attach()
@@ -529,34 +545,8 @@ module.exports =
             @disposables.dispose()
             @tempDir.removeCallback() if @tempDir
 
-        attach: =>
-            if (atom.config.get('tree-view.showOnRightSide'))
-                @panel = atom.workspace.addLeftPanel(item: this)
-            else
-                @panel = atom.workspace.addRightPanel(item: this)
-
         remove: ->
-          super
-          @panel?.destroy()
-
-        # Toggle the visibility of this view
-        toggle: ->
-          if @hasParent()
-            @remove()
-          else
-            @populate()
-            @attach()
-
-        # Show view if hidden
-        showView: ->
-          if not @hasParent()
-            @populate()
-            @attach()
-
-        # Hide view if visisble
-        hideView: ->
-          if @hasParent()
-            @remove()
+          @destroy()
 
         getTempDir: (uri) ->
             @tempDir = tmp.dirSync({ mode: 0o750, prefix: 'atom-exist_', unsafeCleanup: true }) unless @tempDir
