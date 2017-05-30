@@ -1,4 +1,4 @@
-{TreeView} = require "./tree-view"
+TreeView = require "./tree-view.js"
 XQUtils = require './xquery-helper'
 Dialog = require './dialog'
 # EXistEditor = require './editor'
@@ -17,13 +17,14 @@ module.exports =
 
         @tmpDir: null
 
-        @installedPkgs: []
-        @packageRoots: {}
-
         constructor: (@state, @config, @main) ->
             mime.define({
                 "application/xquery": ["xq", "xql", "xquery", "xqm"]
             })
+
+            atom.packages.activatePackage('tree-view').then((pkg) =>
+                @fileTree = pkg.mainModule.getTreeViewInstance()
+            )
 
             atom.workspace.observeTextEditors((editor) =>
                 buffer = editor.getBuffer()
@@ -45,7 +46,7 @@ module.exports =
             @select.classList.add("existdb-database-select")
             @element.appendChild(@select)
 
-            @treeView = new TreeView
+            @treeView = new TreeView()
             @element.appendChild(@treeView.element)
 
             @initServerList()
@@ -97,7 +98,6 @@ module.exports =
             # @disposables.add atom.commands.add 'atom-workspace', 'existdb:sync':
             #     (ev) => @sync(ev.target.spacePenView)
             @populate()
-            console.log("tree view initialized")
 
         getDefaultLocation: () => 'right'
 
@@ -116,7 +116,7 @@ module.exports =
 
         initServerList: ()->
             configs = @config.getConfig()
-            @select.innerHTML = "";
+            @select.innerHTML = ""
             for name, config of configs.servers
                 option = document.createElement("option")
                 option.value = name
@@ -144,7 +144,7 @@ module.exports =
             }
             console.log("populating %o", root)
             @treeView.setRoot(root, false)
-            @checkServer(() => @installedPackages(() => @load(root)))
+            @checkServer(() => @load(root))
 
         load: (item, callback) =>
             self = this
@@ -166,22 +166,14 @@ module.exports =
                     if error? or response.statusCode != 200
                         atom.notifications.addWarning("Failed to load database contents", detail: if response? then response.statusMessage else error)
                     else
-                        @checkPkgRoots(body)
                         item.view.setChildren(body)
                         for child in body
                             child.view.onSelect(self.onSelect)
                             child.view.onDblClick(self.onDblClick)
+                            if child.type == 'collection'
+                                child.view.onDrop(self.upload)
                         callback() if callback
             )
-
-        checkPkgRoots: (items) ->
-            for item in items
-                pkg = @packageRoots[item.path]
-                if pkg?
-                    item.icon = "icon-package"
-                    item.package = pkg
-                if item.children?
-                    @checkPkgRoots(item.children)
 
         removeResource: (selection) =>
             message = if selection.length == 1 then "resource #{selection[0].path}" else "#{selection.length} resources"
@@ -240,6 +232,7 @@ module.exports =
                             item.view.addChild(collection)
                             collection.view.onSelect(@onSelect)
                             collection.view.onDblClick(@onDblClick)
+                            collection.view.onDrop(@upload)
                     )
             )
             dialog.attach()
@@ -357,37 +350,38 @@ module.exports =
                     return editor
             return null
 
-        save: (buffer, file, resource, contentType, onSuccess) ->
-            editor = atom.workspace.getActiveTextEditor()
-            if buffer?
-                connection = @config.getConnection(buffer.getId())
-            else
-                connection = @config.getConnection(null, @getActiveServer())
+        save: (buffer, file, resource, contentType) ->
+            return new Promise((resolve, reject) =>
+                editor = atom.workspace.getActiveTextEditor()
+                if buffer?
+                    connection = @config.getConnection(buffer.getId())
+                else
+                    connection = @config.getConnection(null, @getActiveServer())
 
-            url = "#{connection.server}/rest/#{resource.path}"
-            contentType = mime.lookup(path.extname(file)) unless contentType
-            console.log("Saving %s to %s using content type %s", resource.path, connection.server, contentType)
-            @main.updateStatus("Uploading ...")
-            self = this
-            options =
-                uri: url
-                method: "PUT"
-                strictSSL: false
-                auth:
-                    user: connection.user
-                    pass: connection.password || ""
-                    sendImmediately: true
-                headers:
-                    "Content-Type": contentType
-            fs.createReadStream(file).pipe(
-                request(
-                    options,
-                    (error, response, body) ->
-                        if error?
-                            atom.notifications.addError("Failed to upload #{resource.path}", detail: if response? then response.statusMessage else error)
-                        else
-                            self.main.updateStatus("")
-                            onSuccess?()
+                url = "#{connection.server}/rest/#{resource.path}"
+                contentType = mime.lookup(path.extname(file)) unless contentType
+                console.log("Saving %s to %s using content type %s", resource.path, connection.server, contentType)
+                self = this
+                options =
+                    uri: url
+                    method: "PUT"
+                    strictSSL: false
+                    auth:
+                        user: connection.user
+                        pass: connection.password || ""
+                        sendImmediately: true
+                    headers:
+                        "Content-Type": contentType
+                fs.createReadStream(file).pipe(
+                    request(
+                        options,
+                        (error, response, body) ->
+                            if error?
+                                atom.notifications.addError("Failed to upload #{resource.path}", detail: if response? then response.statusMessage else error)
+                                reject()
+                            else
+                                resolve()
+                    )
                 )
             )
 
@@ -398,95 +392,117 @@ module.exports =
                 return
             editor = atom.workspace.getActiveTextEditor()
             fileName = path.basename(editor.getPath())
-            @save(null, editor.getPath(), path: "#{selected[0].item.path}/#{fileName}", null, () => @load(selected[0].item))
+            @main.updateStatus("Uploading file #{fileName}...")
+            @save(null, editor.getPath(), path: "#{selected[0].item.path}/#{fileName}", null).then(() =>
+                @load(selected[0].item)
+                @main.updateStatus("")
+            )
 
-        uploadSelected: (done) ->
-            locals = []
-            for file in document.querySelectorAll('.tree-view .selected')
-                if file.getPath? then locals.push(file.getPath())
-
+        uploadSelected: () ->
+            locals = @fileTree.selectedPaths()
             if locals? and locals.length > 0
                 selected = @treeView.getSelected()
                 if selected.length != 1 or selected[0].type == "resource"
                     atom.notifications.addError("Please select a single target collection for the upload in the database tree view")
                     return
-                for file in locals
+                @upload(locals, selected[0])
+        
+        upload: ({target, files}) =>
+            @main.updateStatus("Uploading #{files.length} files ...")
+            deploy = files.every((file) -> file.endsWith(".xar"))
+            if deploy
+                atom.confirm
+                    message: "Install Packages?"
+                    detailedMessage: "Would you like to install the packages?"
+                    buttons:
+                        Yes: -> deploy = true
+                        No: -> deploy = false
+            
+            for file in files
+                if (deploy)
+                    promise = @deploy(file)
+                    root = {path: "/db/apps"}
+                else
                     fileName = path.basename(file)
-                    @save(null, file, path: "#{selected[0].path}/#{fileName}", null, () =>
-                        @load(selected[0])
-                        done?("#{selected[0].path}/#{fileName}")
-                    )
+                    promise = @save(null, file, path: "#{target.path}/#{fileName}", null)
+                    root = target
+            promise.then(() =>
+                @load(root)
+                @main.updateStatus("")
+            )
 
-        deploy: (xar, callback) =>
-            if xar? and typeof xar == "string" then paths = [ xar ]
-            if not paths?
-                paths = []
-                for file in document.querySelectorAll('.tree-view .selected')
-                    if file.getPath? then paths.push(file.getPath())
-            if paths? and paths.length > 0
-                for file in paths
-                    fileName = path.basename(file)
-                    targetPath = "/db/system/repo/#{fileName}"
-                    @main.updateStatus("Uploading package ...")
-                    @save(null, file, path: targetPath, null, () =>
-                        @main.updateStatus("Deploying package ...")
-                        query = """
-                        xquery version "3.1";
+        deploy: (xar) =>
+            return new Promise((resolve, reject) =>
+                if xar? and typeof xar == "string" then paths = [ xar ]
+                if not paths?
+                    paths = @fileTree.selectedPaths()
 
-                        declare namespace expath="http://expath.org/ns/pkg";
-                        declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
-                        declare option output:method "json";
-                        declare option output:media-type "application/json";
+                if paths? and paths.length > 0
+                    for file in paths
+                        fileName = path.basename(file)
+                        targetPath = "/db/system/repo/#{fileName}"
+                        @main.updateStatus("Uploading package ...")
+                        @save(null, file, path: targetPath, null).then(() =>
+                            @main.updateStatus("Deploying package ...")
+                            query = """
+                            xquery version "3.1";
 
-                        declare variable $repo := "http://demo.exist-db.org/exist/apps/public-repo/modules/find.xql";
+                            declare namespace expath="http://expath.org/ns/pkg";
+                            declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
+                            declare option output:method "json";
+                            declare option output:media-type "application/json";
 
-                        declare function local:remove($package-url as xs:string) as xs:boolean {
-                            if ($package-url = repo:list()) then
-                                let $undeploy := repo:undeploy($package-url)
-                                let $remove := repo:remove($package-url)
-                                return
-                                    $remove
-                            else
-                                false()
-                        };
+                            declare variable $repo := "http://demo.exist-db.org/exist/apps/public-repo/modules/find.xql";
 
-                        let $xarPath := "#{targetPath}"
-                        let $meta :=
-                            try {
-                                compression:unzip(
-                                    util:binary-doc($xarPath),
-                                    function($path as xs:anyURI, $type as xs:string,
-                                        $param as item()*) as xs:boolean {
-                                        $path = "expath-pkg.xml"
-                                    },
-                                    (),
-                                    function($path as xs:anyURI, $type as xs:string, $data as item()?,
-                                        $param as item()*) {
-                                        $data
-                                    }, ()
-                                )
-                            } catch * {
-                                error(xs:QName("local:xar-unpack-error"), "Failed to unpack archive")
-                            }
-                        let $package := $meta//expath:package/string(@name)
-                        let $removed := local:remove($package)
-                        let $installed := repo:install-and-deploy-from-db($xarPath, $repo)
-                        return
-                            repo:get-root()
-                        """
-                        @runQuery(query,
-                            (error, response) =>
-                                atom.notifications.addError("Failed to deploy package",
-                                    detail: if response? then response.body else error)
-                                @main.updateStatus("")
-                            (body) =>
-                                @main.updateStatus("")
-                                callback?()
+                            declare function local:remove($package-url as xs:string) as xs:boolean {
+                                if ($package-url = repo:list()) then
+                                    let $undeploy := repo:undeploy($package-url)
+                                    let $remove := repo:remove($package-url)
+                                    return
+                                        $remove
+                                else
+                                    false()
+                            };
+
+                            let $xarPath := "#{targetPath}"
+                            let $meta :=
+                                try {
+                                    compression:unzip(
+                                        util:binary-doc($xarPath),
+                                        function($path as xs:anyURI, $type as xs:string,
+                                            $param as item()*) as xs:boolean {
+                                            $path = "expath-pkg.xml"
+                                        },
+                                        (),
+                                        function($path as xs:anyURI, $type as xs:string, $data as item()?,
+                                            $param as item()*) {
+                                            $data
+                                        }, ()
+                                    )
+                                } catch * {
+                                    error(xs:QName("local:xar-unpack-error"), "Failed to unpack archive")
+                                }
+                            let $package := $meta//expath:package/string(@name)
+                            let $removed := local:remove($package)
+                            let $installed := repo:install-and-deploy-from-db($xarPath, $repo)
+                            return
+                                repo:get-root()
+                            """
+                            @runQuery(query,
+                                (error, response) =>
+                                    atom.notifications.addError("Failed to deploy package",
+                                        detail: if response? then response.body else error)
+                                    @main.updateStatus("")
+                                    reject()
+                                (body) =>
+                                    @main.updateStatus("")
+                                    resolve()
+                            )
                         )
-                    )
+            )
 
         openInBrowser: (ev) =>
-            item = ev.target.spacePenView.item
+            item = ev.target.item
             target = item.path.replace(/^.*?\/([^\/]+)$/, "$1")
             connection = @config.getConnection(null, @getActiveServer())
             url = "#{connection.server}/apps/#{target}"
@@ -529,18 +545,12 @@ module.exports =
                     item.loaded = true
                     item.view.toggleClass('collapsed')
                 )
-            else
-                item.view.setSelected(true)
 
         onDblClick: ({node, item}) =>
             if item.type == "resource"
                 @open(item)
-            else
-                node.setCollapsed()
-                node.clearSelection()
 
         destroy: ->
-            @remove()
             @element.remove()
             @disposables.dispose()
             @tempDir.removeCallback() if @tempDir
@@ -574,31 +584,6 @@ module.exports =
                         onError?(error, response)
                     else
                         onSuccess?(body)
-            )
-
-        installedPackages: (onSuccess) =>
-            connection = @config.getConnection(null, @getActiveServer())
-            url = "#{connection.server}/apps/atom-editor/packages.xql"
-            options =
-                uri: url
-                method: "GET"
-                json: true
-                strictSSL: false
-                auth:
-                    user: connection.user
-                    pass: connection.password || ""
-                    sendImmediately: true
-            request(
-                options,
-                (error, response, body) =>
-                    if error? or response.statusCode != 200
-                        atom.notifications.addError("Failed to retrieve list of installed packages", detail: if response? then response.statusMessage else error)
-                    @main.updateStatus("")
-                    @installedPkgs = body
-                    @packageRoots = {}
-                    for pkg in @installedPkgs
-                        @packageRoots[pkg.collection] = pkg
-                    onSuccess?()
             )
 
         checkServer: (onSuccess) =>
@@ -638,7 +623,7 @@ module.exports =
                             detailedMessage: message
                             buttons:
                                 Yes: =>
-                                    @deploy(xar.path, onSuccess)
+                                    @deploy(xar.path).then(onSuccess)
                                 No: -> if typeof body == "string" then onSuccess?() else null
             )
 

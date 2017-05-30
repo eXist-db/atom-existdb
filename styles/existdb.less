@@ -12,24 +12,31 @@
     flex-direction: column;
 
     select {
-        flex-grow: 0;
-        flex-shrink: 0;
         color: @text-color;
         border-color: @base-border-color;
         background-color: @button-background-color;
         font-size: 1.25em;
-        height: 2em;
+        height: 25px;
         margin-top: 10px;
         margin-bottom: 10px;
     }
 }
 
 .existdb-tree-view {
-  padding-left: @component-padding;
-  padding-right: @component-padding;
-  overflow: auto;
+    position: absolute;
+    top: 50px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding-left: @component-padding;
+    padding-right: @component-padding;
+    overflow: auto;
 
-  .header {
-    position: relative;
+    .header {
+        position: relative;
+    }
+
+  .selected:before {
+      background: rgba(0, 0, 0, 0.1);
   }
 }
