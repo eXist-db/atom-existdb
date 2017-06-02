@@ -32,11 +32,25 @@
     padding-right: @component-padding;
     overflow: auto;
 
+    .list-item {
+        // position: relative;
+        
+        .permissions {
+            display: none;
+            color: @text-color-info;
+            margin-left: 1em;
+        }
+    }
+    
+    .list-item:hover .permissions {
+        display: inline;
+    }
+    
     .header {
         position: relative;
     }
-
-  .selected:before {
-      background: rgba(0, 0, 0, 0.1);
-  }
+    
+    .selected:before {
+        background: rgba(0, 0, 0, 0.1);
+    }
 }
