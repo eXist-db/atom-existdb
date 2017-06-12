@@ -1,6 +1,6 @@
 TreeView = require "./tree-view.js"
 XQUtils = require './xquery-helper'
-Dialog = require './dialog'
+{dialog} = require './dialog.js'
 # EXistEditor = require './editor'
 request = require 'request'
 path = require 'path'
@@ -209,12 +209,11 @@ module.exports =
             )
 
         newFile: (item) =>
-            dialog = new Dialog("Enter a name for the new resource:", null, (name) => @createFile(item, name) if name?)
-            dialog.attach()
+            dialog.prompt("Enter a name for the new resource:").then((name) => @createFile(item, name) if name?)
 
         newCollection: (item) =>
             parent = item.path
-            dialog = new Dialog("Enter a name for the new collection:", null, (name) =>
+            dialog.prompt("Enter a name for the new collection:").then((name) =>
                 if name?
                     query = "xmldb:create-collection('#{parent}', '#{name}')"
                     @runQuery(query,
@@ -235,7 +234,6 @@ module.exports =
                             collection.view.onDrop(@upload)
                     )
             )
-            dialog.attach()
 
         createFile: (item, name) ->
             self = this
@@ -524,7 +522,7 @@ module.exports =
             )
 
         sync: (item) =>
-            dialog = new Dialog("Path to sync to (server-side):", null,
+            dialog.prompt("Path to sync to (server-side):").then(
                 (path) =>
                     query = "file:sync('#{item.path}', '#{path}', ())"
                     @main.updateStatus("Sync to directory...")
@@ -537,7 +535,6 @@ module.exports =
                             atom.notifications.addSuccess("Collection #{item.path} synched to directory #{path}")
                     )
             )
-            dialog.attach()
 
         onSelect: ({node, item}) =>
             if not item.loaded
