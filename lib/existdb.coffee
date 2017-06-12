@@ -37,7 +37,7 @@ module.exports = Existdb =
 
         @provider = new Provider(@projectConfig)
 
-        @symbolsView = new SymbolsView(@projectConfig)
+        @symbolsView = new SymbolsView(@projectConfig, @)
 
         # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
         @subscriptions = new CompositeDisposable()
