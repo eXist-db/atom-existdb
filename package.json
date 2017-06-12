@@ -25,18 +25,19 @@
   "dependencies": {
     "atom-linter": "latest",
     "atom-package-deps": "latest",
+    "atom-select-list": "^0.2.0",
     "atom-space-pen-views": "^2.1.1",
+    "chokidar": "^1.4.3",
     "event-kit": "latest",
+    "hyperclick": "latest",
     "jquery": "^2.2.0",
-    "request": "latest",
     "mime": "latest",
     "minimatch": "latest",
-    "tmp": "latest",
     "mkdirp": "latest",
-    "xqlint": "git://github.com/eXistSolutions/xqlint.git#exist-syntax",
-    "hyperclick": "latest",
-    "chokidar": "^1.4.3",
-    "walk": "^2.3.9"
+    "request": "latest",
+    "tmp": "latest",
+    "walk": "^2.3.9",
+    "xqlint": "git://github.com/eXistSolutions/xqlint.git#exist-syntax"
   },
   "bundledDependencies": [
     "xqlint"

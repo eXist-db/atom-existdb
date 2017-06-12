@@ -1,5 +1,5 @@
-EXistSymbolsView = require './existdb-view'
 EXistTreeView = require './existdb-tree-view'
+SymbolsView = require './symbols.js'
 Config = require './project-config'
 {CompositeDisposable, Range, Emitter} = require 'atom'
 request = require 'request'
@@ -19,7 +19,7 @@ module.exports = Existdb =
     subscriptions: null
     projectConfig: null
     provider: undefined
-    symbolsView: undefined
+    # symbolsView: undefined
     treeView: undefined
 
     startTagMarker: undefined
@@ -37,7 +37,7 @@ module.exports = Existdb =
 
         @provider = new Provider(@projectConfig)
 
-        @symbolsView = new EXistSymbolsView(@projectConfig, @)
+        @symbolsView = new SymbolsView(@projectConfig)
 
         # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
         @subscriptions = new CompositeDisposable()
@@ -106,7 +106,7 @@ module.exports = Existdb =
 
     gotoFileSymbol: ->
         editor = atom.workspace.getActiveTextEditor()
-        @symbolsView.populate(editor)
+        @symbolsView.show(editor)
 
     run: (editor) ->
         collectionPaths = util.getCollectionPaths(editor, @projectConfig)
