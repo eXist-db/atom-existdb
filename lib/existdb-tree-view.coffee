@@ -19,7 +19,8 @@ module.exports =
 
         constructor: (@state, @config, @main) ->
             mime.define({
-                "application/xquery": ["xq", "xql", "xquery", "xqm"]
+                "application/xquery": ["xq", "xql", "xquery", "xqm"],
+                "application/xml": ["odd", "xconf", "tei"]
             })
 
             atom.packages.activatePackage('tree-view').then((pkg) =>
