@@ -11,7 +11,7 @@
     'cmd-ctrl-e': 'existdb:toggle-tree-view'
 
 '.platform-darwin atom-text-editor[data-grammar="source xq"]':
-    'ctrl-enter': 'existdb:run'
+    'ctrl-cmd-enter': 'existdb:run'
     'cmd-ctrl-r': 'existdb:file-symbols'
     'cmd-alt-g': 'existdb:goto-definition'
     'cmd-alt-v': 'existdb:rename-variable'
