@@ -11,17 +11,17 @@
 .existdb {
 }
 
-.existdb-symbols-view {
+.existdb-symbols-view, .existdb-imports-view {
     .primary-line {
         font-size: @font-size;
         color: @text-color;
-        
+
         span {
             max-width: 35vw;
             line-height: 1.3;
             vertical-align: middle;
         }
-        
+
         .left-label {
             max-width: 20vw;
             text-align: right;
@@ -40,6 +40,11 @@
         color: @text-color-subtle;
     }
 }
+
+.existdb-imports-view .secondary-line {
+    text-align: left;
+}
+
 .existdb-tree {
     display: flex;
     flex-direction: column;
@@ -68,7 +73,7 @@
     .list-item {
         vertical-align: middle;
         line-height: 1.3;
-        
+
         .permissions {
             display: none;
             color: @text-color-info;
@@ -76,15 +81,15 @@
             margin-left: 1em;
         }
     }
-    
+
     .list-item:hover .permissions {
         display: inline;
     }
-    
+
     .header {
         position: relative;
     }
-    
+
     .selected:before {
         background: rgba(0, 0, 0, 0.1);
     }

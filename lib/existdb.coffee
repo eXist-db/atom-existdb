@@ -1,5 +1,6 @@
 EXistTreeView = require './existdb-tree-view'
 SymbolsView = require './symbols.js'
+ImportsView = require './imports.js'
 Config = require './project-config'
 {CompositeDisposable, Range, Emitter} = require 'atom'
 request = require 'request'
@@ -38,7 +39,7 @@ module.exports = Existdb =
         @provider = new Provider(@projectConfig)
 
         @symbolsView = new SymbolsView(@projectConfig, @)
-
+        @importsView = new ImportsView(@projectConfig)
         # Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
         @subscriptions = new CompositeDisposable()
         @tagSubscriptions = new CompositeDisposable()
@@ -53,6 +54,7 @@ module.exports = Existdb =
 
         @subscriptions.add atom.commands.add 'atom-text-editor', 'existdb:run': => @run(atom.workspace.getActiveTextEditor())
         @subscriptions.add atom.commands.add 'atom-text-editor', 'existdb:file-symbols': => @gotoFileSymbol()
+        @subscriptions.add atom.commands.add 'atom-text-editor', 'existdb:import-module': => @importModule()
         @subscriptions.add atom.commands.add 'atom-workspace', 'existdb:toggle-tree-view': => @treeView.toggle()
         @subscriptions.add atom.commands.add 'atom-text-editor[data-grammar="source xq"]', 'existdb:rename-variable': @renameVariable
         @subscriptions.add atom.commands.add 'atom-text-editor[data-grammar="source xq"]', 'existdb:expand-selection': @expandSelection
@@ -92,6 +94,7 @@ module.exports = Existdb =
         @projectConfig.destroy()
         @subscriptions.dispose()
         @symbolsView.destroy()
+        @importsView.destroy()
         @treeView.destroy()
         @emitter.dispose()
         @tooltips.dispose()
@@ -107,6 +110,10 @@ module.exports = Existdb =
     gotoFileSymbol: ->
         editor = atom.workspace.getActiveTextEditor()
         @symbolsView.show(editor)
+
+    importModule: ->
+        editor = atom.workspace.getActiveTextEditor()
+        @importsView.show(editor)
 
     run: (editor) ->
         collectionPaths = util.getCollectionPaths(editor, @projectConfig)
