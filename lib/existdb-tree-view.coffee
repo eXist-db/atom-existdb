@@ -550,7 +550,6 @@ module.exports =
                 @open(item)
 
         destroy: ->
-            super
             @element.remove()
             @disposables.dispose()
             @tempDir.removeCallback() if @tempDir

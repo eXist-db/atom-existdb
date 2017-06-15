@@ -1,6 +1,7 @@
 EXistTreeView = require './existdb-tree-view'
 SymbolsView = require './symbols.js'
 ImportsView = require './imports.js'
+quickfix = require './quickfix.js'
 Config = require './project-config'
 {CompositeDisposable, Range, Emitter} = require 'atom'
 request = require 'request'
@@ -469,7 +470,8 @@ module.exports = Existdb =
                             location: {
                                 position: range,
                                 file: editor.getPath()
-                            }
+                            },
+                            solutions: quickfix.getSolutions(editor, error.msg, range, self.importsView)
                         }
                         messages.push(message)
 
