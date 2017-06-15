@@ -7,17 +7,18 @@ path = require 'path'
 fs = require 'fs'
 tmp = require 'tmp'
 mkdirp = require 'mkdirp'
-{CompositeDisposable} = require 'atom'
+{CompositeDisposable, Emitter} = require 'atom'
 mime = require 'mime'
 {exec} = require('child_process')
 Shell = require('shell')
 
 module.exports =
-    class EXistTreeView
+    class EXistTreeView extends Emitter
 
         @tmpDir: null
 
-        constructor: (@state, @config, @main) ->
+        constructor: (@state, @config) ->
+            super
             mime.define({
                 "application/xquery": ["xq", "xql", "xquery", "xqm"],
                 "application/xml": ["odd", "xconf", "tei"]
@@ -198,14 +199,14 @@ module.exports =
                     user: connection.user
                     pass: connection.password || ""
                     sendImmediately: true
-            @main.updateStatus("Deleting #{resource.path}...")
+            @emit("status", "Deleting #{resource.path}...")
             request(
                 options,
                 (error, response, body) =>
                     if error?
                         atom.notifications.addError("Failed to delete #{resource.path}", detail: if response? then response.statusMessage else error)
                     else
-                        @main.updateStatus("")
+                        @emit("status", "")
                         resource.view.delete()
             )
 
@@ -290,7 +291,7 @@ module.exports =
             url = "#{connection.server}/apps/atom-editor/load.xql?path=#{resource.path}"
             tmpDir = @getTempDir(resource.path)
             tmpFile = path.join(tmpDir, path.basename(resource.path))
-            @main.updateStatus("Opening #{resource.path} ...")
+            @emit("status", "Opening #{resource.path} ...")
             console.log("Downloading %s to %s", resource.path, tmpFile)
             stream = fs.createWriteStream(tmpFile)
             options =
@@ -307,11 +308,11 @@ module.exports =
                     contentType = response.headers["content-type"]
                 )
                 .on("error", (err) ->
-                    self.main.updateStatus("")
+                    self.emit("status", "")
                     atom.notifications.addError("Failed to download #{resource.path}", detail: err)
                 )
                 .on("end", () ->
-                    self.main.updateStatus("")
+                    self.emit("status", "")
                     promise = atom.workspace.open(null)
                     promise.then((newEditor) ->
                         buffer = newEditor.getBuffer()
@@ -391,10 +392,10 @@ module.exports =
                 return
             editor = atom.workspace.getActiveTextEditor()
             fileName = path.basename(editor.getPath())
-            @main.updateStatus("Uploading file #{fileName}...")
+            @emit("status", "Uploading file #{fileName}...")
             @save(null, editor.getPath(), path: "#{selected[0].item.path}/#{fileName}", null).then(() =>
                 @load(selected[0].item)
-                @main.updateStatus("")
+                @emit("status", "")
             )
 
         uploadSelected: () ->
@@ -405,9 +406,9 @@ module.exports =
                     atom.notifications.addError("Please select a single target collection for the upload in the database tree view")
                     return
                 @upload(locals, selected[0])
-        
+
         upload: ({target, files}) =>
-            @main.updateStatus("Uploading #{files.length} files ...")
+            @emit("status", "Uploading #{files.length} files ...")
             deploy = files.every((file) -> file.endsWith(".xar"))
             if deploy
                 atom.confirm
@@ -416,7 +417,7 @@ module.exports =
                     buttons:
                         Yes: -> deploy = true
                         No: -> deploy = false
-            
+
             for file in files
                 if (deploy)
                     promise = @deploy(file)
@@ -427,7 +428,7 @@ module.exports =
                     root = target
             promise.then(() =>
                 @load(root)
-                @main.updateStatus("")
+                @emit("status", "")
             )
 
         deploy: (xar) =>
@@ -440,9 +441,9 @@ module.exports =
                     for file in paths
                         fileName = path.basename(file)
                         targetPath = "/db/system/repo/#{fileName}"
-                        @main.updateStatus("Uploading package ...")
+                        @emit("status", "Uploading package ...")
                         @save(null, file, path: targetPath, null).then(() =>
-                            @main.updateStatus("Deploying package ...")
+                            @emit("status", "Deploying package ...")
                             query = """
                             xquery version "3.1";
 
@@ -491,10 +492,10 @@ module.exports =
                                 (error, response) =>
                                     atom.notifications.addError("Failed to deploy package",
                                         detail: if response? then response.body else error)
-                                    @main.updateStatus("")
+                                    @emit("status", "")
                                     reject()
                                 (body) =>
-                                    @main.updateStatus("")
+                                    @emit("status", "")
                                     resolve()
                             )
                         )
@@ -513,12 +514,12 @@ module.exports =
 
         reindex: (item) ->
             query = "xmldb:reindex('#{item.path}')"
-            @main.updateStatus("Reindexing #{item.path}...")
+            @emit("status", "Reindexing #{item.path}...")
             @runQuery(query,
                 (error, response) ->
                     atom.notifications.addError("Failed to reindex collection #{item.path}", detail: if response? then response.statusMessage else error)
                 (body) =>
-                    @main.updateStatus("")
+                    @emit("status", "")
                     atom.notifications.addSuccess("Collection #{item.path} reindexed")
             )
 
@@ -526,13 +527,13 @@ module.exports =
             dialog.prompt("Path to sync to (server-side):").then(
                 (path) =>
                     query = "file:sync('#{item.path}', '#{path}', ())"
-                    @main.updateStatus("Sync to directory...")
+                    @emit("status", "Sync to directory...")
                     @runQuery(query,
                         (error, response) ->
-                            @main.updateStatus("")
+                            @emit("status", "")
                             atom.notifications.addError("Failed to sync collection #{item.path}", detail: if response? then response.statusMessage else error)
                         (body) =>
-                            @main.updateStatus("")
+                            @emit("status", "")
                             atom.notifications.addSuccess("Collection #{item.path} synched to directory #{path}")
                     )
             )
@@ -549,6 +550,7 @@ module.exports =
                 @open(item)
 
         destroy: ->
+            super
             @element.remove()
             @disposables.dispose()
             @tempDir.removeCallback() if @tempDir

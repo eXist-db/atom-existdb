@@ -34,7 +34,8 @@ module.exports = Existdb =
 
         @watcherControl = new WatcherControl(@projectConfig, @)
 
-        @treeView = new EXistTreeView(@state, @projectConfig, @)
+        @treeView = new EXistTreeView(@state, @projectConfig)
+        @treeView.on("status", (msg) => @updateStatus(msg))
 
         @provider = new Provider(@projectConfig)
 
