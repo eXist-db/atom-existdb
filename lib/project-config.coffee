@@ -21,19 +21,25 @@ class ProjectConfig
         @load(atom.project.getPaths())
         @disposables.push(atom.project.onDidChangePaths(@load))
         @disposables.push(atom.commands.add('atom-workspace', 'existdb:create-configuration-for-selected': =>
-            selected =
-                $('.tree-view .selected').map(() ->
-                    if this.getPath? then this.getPath() else ''
-                ).get()
-            if selected? and selected.length > 0
-                path = @getProjectConfigPath(selected[0])
-            else
-                path = atom.project.getPaths()?[0]
-            @createProjectConfig(path))
+            atom.packages.activatePackage('tree-view').then((pkg) =>
+                fileTree = pkg.mainModule.getTreeViewInstance()
+                selected = fileTree.selectedPaths()
+                if selected? and selected.length > 0
+                    path = @getProjectConfigPath(selected[0]) or selected[0]
+                else
+                    path = atom.project.getPaths()?[0]
+                @createProjectConfig(path)
+            ))
         )
         @disposables.push(atom.commands.add('atom-workspace', 'existdb:create-configuration-for-current': =>
             editor = atom.workspace.getActiveTextEditor()
+            if not editor?
+                atom.notifications.addError('No editor open')
+                return
+            
             path = @getProjectConfigPath(editor.getPath())
+            if not path
+                path = atom.project.relativizePath(editor.getPath())[0]
             @createProjectConfig(path))
         )
         @disposables.push(atom.commands.add('atom-workspace', 'existdb:edit-configuration': =>
