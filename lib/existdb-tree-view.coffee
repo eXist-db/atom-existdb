@@ -421,7 +421,7 @@ module.exports =
             for file in files
                 if (deploy)
                     promise = @deploy(file)
-                    root = {path: "/db/apps"}
+                    root = @treeView.getNode("/db/apps")
                 else
                     fileName = path.basename(file)
                     promise = @save(null, file, path: "#{target.path}/#{fileName}", null)
