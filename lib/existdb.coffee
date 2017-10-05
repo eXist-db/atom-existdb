@@ -523,5 +523,5 @@ module.exports = Existdb =
     consumeSignal: (registry) ->
         @busySignal = registry.create()
         @subscriptions.add(@busySignal)
-        @sync.on("sync", message => @busySignal.add(message))
+        @sync.on("sync", (message) => @busySignal.add(message))
         @sync.on("ready", () => @busySignal.clear())
