@@ -14,10 +14,6 @@ module.exports =
         config: undefined
 
         constructor: (@config) ->
-            require('atom-package-deps').install().then(
-                () ->
-                    console.log("Initializing provider")
-            )
 
         getSuggestions: ({editor, bufferPosition, scopeDescriptor, prefix}) ->
             prefix = @getPrefix(editor, bufferPosition)

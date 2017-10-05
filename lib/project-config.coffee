@@ -1,4 +1,4 @@
-{Emitter} = require('atom')
+{Emitter,File} = require('atom')
 $ = require('jquery')
 fs = require 'fs'
 _path = require 'path'
@@ -36,7 +36,7 @@ class ProjectConfig
             if not editor?
                 atom.notifications.addError('No editor open')
                 return
-            
+
             path = @getProjectConfigPath(editor.getPath())
             if not path
                 path = atom.project.relativizePath(editor.getPath())[0]
@@ -45,12 +45,16 @@ class ProjectConfig
         @disposables.push(atom.commands.add('atom-workspace', 'existdb:edit-configuration': =>
             atom.workspace.open(@globalConfigPath)
         ))
-        fs.watchFile(@globalConfigPath, (curr, prev) =>
+        file = new File(@globalConfigPath)
+        disposable = file.onDidChange(=>
             @initGlobalConfig()
             @emitter.emit("changed", [@configs, @globalConfig])
         )
+        @disposables.push(disposable)
 
     load: (paths) =>
+        for config in @configs
+            config.disposable.dispose()
         @paths = []
         @configs = []
         for dir in paths
@@ -61,12 +65,15 @@ class ProjectConfig
                     contents = fs.readFileSync(configPath, 'utf8')
                     try
                         data = JSON.parse(contents)
-                        fs.watchFile(configPath, (curr, prev) =>
+                        file = new File(configPath)
+                        disposable = file.onDidChange(=>
+                            console.log("Configuration changed. Reloading")
                             @load([dir])
                         )
                         config = $.extend({}, @getDefaults(), data)
                         config.path = dir
                         config.configFile = configPath
+                        config.disposable = disposable
                         for name, connection of config.servers
                             connection.name = name
 
@@ -194,5 +201,4 @@ class ProjectConfig
     destroy: ->
         @emitter.dispose()
         disposable.dispose() for disposable in @disposables
-        fs.unwatchFile(config.configFile) for config in @configs
-        fs.unwatchFile(@globalConfigPath)
+        config.disposable.dispose() for config in @configs

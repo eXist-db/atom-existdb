@@ -1,7 +1,7 @@
 {
   "name": "existdb",
   "main": "./lib/existdb",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "XQuery development with linting, autocomplete and hyperclick navigation for the eXist-db Native XML Database (http://exist-db.org).",
   "author": {
     "name": "Wolfgang Meier",
@@ -20,13 +20,13 @@
   },
   "license": "MIT",
   "engines": {
-    "atom": ">=1.17.0 <2.0.0"
+    "atom": ">=1.21.0 <2.0.0"
   },
   "dependencies": {
+    "fs-plus": "latest",
     "atom-linter": "latest",
     "atom-package-deps": "latest",
     "atom-select-list": "^0.2.0",
-    "chokidar": "^1.7.0",
     "event-kit": "latest",
     "hyperclick": "latest",
     "jquery": "^2.2.0",
@@ -35,15 +35,14 @@
     "mkdirp": "latest",
     "request": "latest",
     "tmp": "latest",
-    "walk": "^2.3.9",
     "xqlint": "git://github.com/eXistSolutions/xqlint.git#exist-syntax"
   },
   "bundledDependencies": [
     "xqlint"
   ],
   "package-deps": [
-    "linter",
-    "hyperclick"
+    "hyperclick",
+    "linter"
   ],
   "providedServices": {
     "autocomplete.provider": {

@@ -6,7 +6,7 @@ Config = require './project-config'
 {CompositeDisposable, Range, Emitter} = require 'atom'
 request = require 'request'
 Provider = require "./provider"
-WatcherControl = require "./watcher-control"
+Sync = require './sync.js'
 util = require "./util"
 _path = require 'path'
 cp = require 'child_process'
@@ -29,11 +29,16 @@ module.exports = Existdb =
 
     activate: (@state) ->
         console.log "Activating eXistdb"
+        require('atom-package-deps').install("existdb").then(
+            () ->
+                console.log("Initializing provider")
+        )
+
         @emitter = new Emitter()
 
         @projectConfig = new Config()
 
-        @watcherControl = new WatcherControl(@projectConfig, @)
+        @sync = new Sync(@projectConfig);
 
         @treeView = new EXistTreeView(@state, @projectConfig)
         @treeView.on("status", (msg) => @updateStatus(msg))
@@ -92,7 +97,7 @@ module.exports = Existdb =
         @emitter.emit("activated")
 
     deactivate: ->
-        @watcherControl.destroy()
+        @sync.destroy();
         @projectConfig.destroy()
         @subscriptions.dispose()
         @symbolsView.destroy()
@@ -232,10 +237,11 @@ module.exports = Existdb =
             promise.then((newEditor) -> onOpen?(newEditor))
 
     updateStatus: (message) ->
-        if message == ""
-            @busySignal.clear()
-        else
-            @busySignal.add(message);
+        if @busySignal?
+            if message == ""
+              @busySignal.clear()
+            else
+              @busySignal.add(message);
 
     closeTag: (ev) ->
         editor = atom.workspace.getActiveTextEditor()
@@ -517,18 +523,5 @@ module.exports = Existdb =
     consumeSignal: (registry) ->
         @busySignal = registry.create()
         @subscriptions.add(@busySignal)
-
-        @emitter.on("activated", () =>
-            @watcherControl.on("status", (message) ->
-                if message == ""
-                    @busySignal.clear()
-                else
-                    @busySignal.add(message)
-            )
-            @watcherControl.on("activate", (endpoint) ->
-                @busySignal.add("File watcher activated")
-            )
-            @watcherControl.on("deactivate", (endpoint) ->
-                @busySignal.clear()
-            )
-        )
+        @sync.on("sync", message => @busySignal.add(message))
+        @sync.on("ready", () => @busySignal.clear())

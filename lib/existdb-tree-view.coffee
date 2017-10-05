@@ -21,7 +21,7 @@ module.exports =
             super
             mime.define({
                 "application/xquery": ["xq", "xql", "xquery", "xqm"],
-                "application/xml": ["odd", "xconf", "tei"]
+                "application/xml": ["odd", "xconf"]
             })
 
             atom.packages.activatePackage('tree-view').then((pkg) =>
@@ -263,7 +263,7 @@ module.exports =
                 resource.editor = newEditor
                 buffer._remote = resource
                 onDidSave = buffer.onDidSave((ev) ->
-                    self.save(null, tmpFile, resource, mime.lookup(resource.path))
+                    self.save(null, tmpFile, resource, mime.getType(resource.path))
                 )
                 onDidDestroy = buffer.onDidDestroy((ev) ->
                     self.disposables.remove(onDidSave)
@@ -359,7 +359,7 @@ module.exports =
                     connection = @config.getConnection(null, @getActiveServer())
 
                 url = "#{connection.server}/rest/#{resource.path}"
-                contentType = mime.lookup(path.extname(file)) unless contentType
+                contentType = mime.getType(path.extname(file)) unless contentType
                 console.log("Saving %s to %s using content type %s", resource.path, connection.server, contentType)
                 self = this
                 options =
