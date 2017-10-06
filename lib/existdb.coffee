@@ -39,6 +39,7 @@ module.exports = Existdb =
         @projectConfig = new Config()
 
         @sync = new Sync(@projectConfig);
+        @sync.on("status", (message) => @updateStatus(message))
 
         @treeView = new EXistTreeView(@state, @projectConfig)
         @treeView.on("status", (msg) => @updateStatus(msg))
@@ -523,5 +524,3 @@ module.exports = Existdb =
     consumeSignal: (registry) ->
         @busySignal = registry.create()
         @subscriptions.add(@busySignal)
-        @sync.on("sync", (message) => @busySignal.add(message))
-        @sync.on("ready", () => @busySignal.clear())
