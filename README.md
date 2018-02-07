@@ -104,7 +104,7 @@ Pressing `alt-up` will expand the current selection to the closest XQuery expres
 ![XML Editing](https://raw.githubusercontent.com/wolfgangmm/atom-existdb/master/xml-edit.gif)
 
 #### Execute XQuery scripts
-You can send the XQuery code in the current editor to eXist for execution by pressing `ctrl-enter` (mac) or `alt-shift-enter` (windows/linux). The result will be displayed in a new editor tab. Obviously this will only work for XQuery main modules.
+You can send the XQuery code in the current editor to eXist for execution by pressing `cmd-ctrl-enter` (mac) or `alt-shift-enter` (windows/linux). The result will be displayed in a new editor tab. Obviously this will only work for XQuery main modules.
 
 ![Executing query](https://raw.githubusercontent.com/wolfgangmm/atom-existdb/master/run.gif)
 
