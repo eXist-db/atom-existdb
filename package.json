@@ -6,7 +6,7 @@
   "author": {
     "name": "Wolfgang Meier",
     "email": "wolfgang@existsolutions.com",
-    "url": "http://github.com/wolfgangmm"
+    "url": "https://github.com/eXist-db/atom-existdb"
   },
   "keywords": [
     "xmldb",
@@ -14,20 +14,20 @@
     "xquery",
     "xml"
   ],
-  "repository": "https://github.com/wolfgangmm/atom-existdb",
+  "repository": "https://github.com/eXist-db/atom-existdb",
   "bugs": {
-    "url": "https://github.com/wolfgangmm/atom-existdb/issues"
+    "url": "https://github.com/eXist-db/atom-existdb/issues"
   },
   "license": "MIT",
   "engines": {
     "atom": ">=1.21.0 <2.0.0"
   },
   "dependencies": {
-    "fs-plus": "latest",
     "atom-linter": "latest",
     "atom-package-deps": "latest",
     "atom-select-list": "^0.2.0",
     "event-kit": "latest",
+    "fs-plus": "latest",
     "hyperclick": "latest",
     "jquery": "^2.2.0",
     "mime": "latest",
