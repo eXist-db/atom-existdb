@@ -12,7 +12,7 @@ This package contains a set of views and providers to support XQuery development
 * execution of XQuery scripts within the editor
 * symbols view to navigate to functions and variables which are in scope for the current XQuery
 
-![First steps](https://raw.githubusercontent.com/wolfgangmm/atom-existdb/master/basic.gif)
+![First steps](https://raw.githubusercontent.com/eXist-db/atom-existdb/master/basic.gif)
 
 ## Dependencies
 
@@ -92,7 +92,7 @@ Type a few characters to limit the list to functions or variable containing that
 #### Refactoring
 You will notice that if you place the cursor inside a variable name, other occurrences of the same variable within the current scope will be highlighted. To rename the variable, press `cmd-alt-v` or `ctrl-alt-v`. This will select all occurrences and you can type as usual to change them all simultaneously. Once you're done, press `ESC` to get back to the single cursor.
 
-![XML Editing](https://raw.githubusercontent.com/wolfgangmm/atom-existdb/master/refactor.gif)
+![XML Editing](https://raw.githubusercontent.com/eXist-db/atom-existdb/master/refactor.gif)
 
 #### Expand Selection
 Pressing `alt-up` will expand the current selection to the closest XQuery expression, respecting XQuery semantics. Repeatedly press `alt-up` to select larger blocks.
@@ -101,12 +101,12 @@ Pressing `alt-up` will expand the current selection to the closest XQuery expres
 * open XML tags are closed automatically if you press `</` inside an XML context
 * changing the name of a tag will also change the corresponding opening or closing tag
 
-![XML Editing](https://raw.githubusercontent.com/wolfgangmm/atom-existdb/master/xml-edit.gif)
+![XML Editing](https://raw.githubusercontent.com/eXist-db/atom-existdb/master/xml-edit.gif)
 
 #### Execute XQuery scripts
 You can send the XQuery code in the current editor to eXist for execution by pressing `ctrl-enter` (mac) or `alt-shift-enter` (windows/linux). The result will be displayed in a new editor tab. Obviously this will only work for XQuery main modules.
 
-![Executing query](https://raw.githubusercontent.com/wolfgangmm/atom-existdb/master/run.gif)
+![Executing query](https://raw.githubusercontent.com/eXist-db/atom-existdb/master/run.gif)
 
 ### Using the File Tree View
 Inside Atom's file tree pane, right clicking will show a subcategory *existdb* in the context menu for files and directories.
@@ -133,11 +133,13 @@ Next, right click on the project root in the file tree and select *Edit Configur
     },
     "sync": {
         "server": "localhost",
-        "root": "/db/apps/atom-editor",
+        "root": "/db/apps/my-app",
         "active": true,
         "ignore": [
             ".existdb.json",
-            ".git/**"
+            ".git/**",
+            "node_modules/**",
+            "bower_components/**"
         ]
     }
 }
@@ -171,7 +173,7 @@ Changes made to the project directory while Atom is closed will not be detected 
 Clone the main package, cd into it and run `apm install` once. This creates a subdirectory `node_modules`. Next, call `apm link .` to register the package with Atom. The complete steps:
 
 ```shell
-git clone https://github.com/wolfgangmm/atom-existdb.git
+git clone https://github.com/eXist-db/atom-existdb.git
 cd atom-existdb
 apm install
 apm link .
@@ -180,7 +182,7 @@ apm link .
 You may also want to clone and build the server-side support app:
 
 ```shell
-git clone https://github.com/wolfgangmm/atom-editor-support.git
+git clone https://github.com/eXist-db/atom-editor-support.git
 cd atom-editor-support
 ant
 ```
