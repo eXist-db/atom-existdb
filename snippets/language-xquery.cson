@@ -59,3 +59,9 @@
   'output':
     'prefix': 'output'
     'body': 'declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";\ndeclare option output:method "${1:xml}";\ndeclare option output:media-type "${2:application/xml}";'
+  'json':
+    'prefix': 'json'
+    'body': 'declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";\ndeclare option output:method "json";\ndeclare option output:media-type "application/json";'
+  'html':
+    'prefix': 'html'
+    'body': 'declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";\ndeclare option output:method "html5";\ndeclare option output:media-type "text/html";'
