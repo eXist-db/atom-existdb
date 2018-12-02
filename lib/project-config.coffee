@@ -67,7 +67,7 @@ class ProjectConfig
                         data = JSON.parse(contents)
                         file = new File(configPath)
                         disposable = file.onDidChange(=>
-                            console.log("Configuration changed. Reloading")
+                            atom.notifications.addInfo('Config changed, reloading .existdb.json')
                             @load([dir])
                         )
                         config = $.extend({}, @getDefaults(), data)
