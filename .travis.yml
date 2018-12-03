@@ -3,7 +3,6 @@ language: generic
 os:
   - linux
   - osx
-  - windows
 
 addons:
   apt:
@@ -11,7 +10,7 @@ addons:
     - build-essential
     - fakeroot
     - git
-    - libsecret-1-dev  
+    - libsecret-1-dev
 
 notifications:
   email:
