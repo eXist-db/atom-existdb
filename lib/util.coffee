@@ -127,7 +127,7 @@ module.exports =
             collection = path.dirname(relativePath)
             basePath: "xmldb:exist://" + config.getConfig(editor).sync?.root + "/" + collection
             collection: collection
-    
+
     parseURI: (uri) ->
         match = /^exist:\/\/(.*?)(\/db.*)$/.exec(uri)
         if  match?

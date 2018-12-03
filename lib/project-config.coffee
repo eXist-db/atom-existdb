@@ -121,7 +121,7 @@ class ProjectConfig
         return globals
 
     initGlobalConfig: () ->
-        @globalConfigPath = _path.join(_path.dirname(atom.config.getUserConfigPath()), 'existdb.json')
+        @globalConfigPath = _path.join(_path.dirname(atom.config.getUserConfigPath.toString()), '.existdb.json')
         if not fs.existsSync(@globalConfigPath)
             defaults = {
                 servers: {
