@@ -1,4 +1,6 @@
 Existdb = require '../lib/existdb'
+_path = require 'path'
+
 
 # Use the command `window:run-package-specs` (cmd-alt-ctrl-p) to run specs.
 #
@@ -30,3 +32,8 @@ describe "Existdb", ->
         expect(existdbElement).toExist()
 
         expect(existdbElement.querySelectorAll('.collection').length).toBeGreaterThan(1)
+
+# describe "Default config", ->
+#   it "can be reached", ->
+#     # expect("apples").toEqual("apples")
+#     expect(_path.dirname(atom.config.getUserConfigPath()).toString().toEqual('~/.atom'))
