@@ -1,5 +1,6 @@
 # Atom editor package for eXistdb
 [![Build Status](https://travis-ci.com/eXist-db/atom-existdb.svg?branch=master)](https://travis-ci.com/eXist-db/atom-existdb)[![Build status](https://ci.appveyor.com/api/projects/status/hvm17a5rykvt40y2/branch/master?svg=true)](https://ci.appveyor.com/project/eXist-db/atom-existdb/branch/master)
+
 This package contains a set of views and providers to support XQuery development using the [eXistdb Native XML Database](http://exist-db.org). In particular, the features are:
 
 * tree view to browse the contents of the database

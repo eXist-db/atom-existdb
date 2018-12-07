@@ -3,7 +3,7 @@ language: generic
 env:
   global:
     # packages to install before ours go here
-    - APM_TEST_PACKAGES=""
+    - APM_TEST_PACKAGES="hyperclick linter"
     - ATOM_LINT_WITH_BUNDLED_NODE="true"
 
   matrix:
