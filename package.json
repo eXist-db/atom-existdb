@@ -1,7 +1,7 @@
 {
   "name": "existdb",
   "main": "./lib/existdb",
-  "version": "0.12.0",
+  "version": "0.12.0-development",
   "description": "XQuery development with linting, autocomplete and hyperclick navigation for the eXist-db Native XML Database (http://exist-db.org).",
   "author": {
     "name": "Wolfgang Meier",
@@ -21,6 +21,9 @@
   "license": "MIT",
   "engines": {
     "atom": ">=1.21.0 <2.0.0"
+  },
+  "release": {
+    "branch": "next"
   },
   "dependencies": {
     "atom-linter": "latest",
@@ -81,5 +84,10 @@
       "name": "max_line_length",
       "level": "ignore"
     }
+  },
+  "devDependencies": {
+    "@semantic-release/apm": "^1.0.0",
+    "@semantic-release/apm-config": "^6.0.1",
+    "semantic-release": "^15.12.4"
   }
 }
