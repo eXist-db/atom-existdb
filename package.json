@@ -1,7 +1,7 @@
 {
   "name": "existdb",
   "main": "./lib/existdb",
-  "version": "0.12.0-development",
+  "version": "0.13.0",
   "description": "XQuery development with linting, autocomplete and hyperclick navigation for the eXist-db Native XML Database (http://exist-db.org).",
   "author": {
     "name": "Wolfgang Meier",
