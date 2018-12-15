@@ -33,6 +33,7 @@ jobs:
           branch: master
         provider: script
         skip_cleanup: true
+        before_script: export PATH=$PATH:~/atom/usr/bin
         script:
           - npx semantic-release
 
