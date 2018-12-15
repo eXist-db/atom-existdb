@@ -87,7 +87,6 @@
   },
   "devDependencies": {
     "@semantic-release/apm": "^1.0.0",
-    "@semantic-release/apm-config": "^6.0.1",
-    "semantic-release": "^15.12.5"
+    "@semantic-release/apm-config": "^6.0.1"
   }
 }
