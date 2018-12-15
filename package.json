@@ -22,9 +22,6 @@
   "engines": {
     "atom": ">=1.21.0 <2.0.0"
   },
-  "release": {
-    "branch": "master"
-  },
   "dependencies": {
     "atom-linter": "latest",
     "atom-package-deps": "latest",
@@ -86,7 +83,6 @@
     }
   },
   "devDependencies": {
-    "@semantic-release/apm": "^1.0.0",
-    "@semantic-release/apm-config": "^6.0.1"
+    "@semantic-release/apm": "^1.0.0"
   }
 }
