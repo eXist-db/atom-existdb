@@ -22,6 +22,14 @@
   "engines": {
     "atom": ">=1.21.0 <2.0.0"
   },
+  "release": {
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/github",
+      "@semantic-release/apm"
+    ]
+  },
   "dependencies": {
     "atom-linter": "latest",
     "atom-package-deps": "latest",
