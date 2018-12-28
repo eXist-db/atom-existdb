@@ -91,6 +91,6 @@
     }
   },
   "devDependencies": {
-    "@semantic-release/apm": "^1.0.0"
+    "@semantic-release/apm": "^1.0.1"
   }
 }
