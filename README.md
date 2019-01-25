@@ -192,4 +192,4 @@ ant
 This creates `atom-editor-[version].xar` inside the `build/` directory. Deploy this into your eXist instance using the dashboard.
 
 #### Releasing
-Releases are managed by [semantic-release](https://github.com/semantic-release/apm-config). Your commit messages should follow [angular commit message conventions](https://github.com/angular/angular.js/blob/master/DEVELOPERS.md#-git-commit-guidelines)
+Releases are managed by [semantic-release](https://github.com/semantic-release/apm-config). Your commit messages should follow [angular commit message conventions](https://github.com/angular/angular.js/blob/master/DEVELOPERS.md#-git-commit-guidelines). A bot will calculate the correct semantic version number, and update `package.json` and handle release. Do **NOT** modify this as part of your commits. 
