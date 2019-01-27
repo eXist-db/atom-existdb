@@ -1,5 +1,6 @@
 # Atom editor package for eXistdb
-[![Build Status](https://travis-ci.com/eXist-db/atom-existdb.svg?branch=master)](https://travis-ci.com/eXist-db/atom-existdb)[![Build status](https://ci.appveyor.com/api/projects/status/f6ybph9tdbba8vq5?svg=true)](https://ci.appveyor.com/project/duncdrum/atom-existdb-7clfi)
+[![Build Status](https://travis-ci.com/eXist-db/atom-existdb.svg?branch=master)](https://travis-ci.com/eXist-db/atom-existdb)[![Build status](https://ci.appveyor.com/api/projects/status/f6ybph9tdbba8vq5?svg=true)](https://ci.appveyor.com/project/duncdrum/atom-existdb-7clfi)[![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
+
 
 
 This package contains a set of views and providers to support XQuery development using the [eXistdb Native XML Database](http://exist-db.org). In particular, the features are:
@@ -22,8 +23,8 @@ The eXistdb package requires a small support app to be installed in the database
 
 Linting and code navigation also depend on two Atom packages, which should be installed automatically unless they are already present:
 
-1. linter
-2. hyperclick
+1.  linter
+2.  hyperclick
 
 ## Usage
 
@@ -31,8 +32,8 @@ Linting and code navigation also depend on two Atom packages, which should be in
 
 The package supports two different workflows for developing with eXist:
 
-1. directly work on the files stored *inside* the database, i.e. all development is done in eXist
-2. Atom is called on a directory on the file system, which resembles an application stored in eXist. Editing is done in the directory but files are automatically synced to the database.
+1.  Directly work on the files stored *inside* the database, i.e. all development is done in eXist
+2.  Atom is called on a directory on the file system, which resembles an application stored in eXist. Editing is done in the directory but files are automatically synced to the database.
 
 Most eXist users will be familiar with the first approach because this is how the in-browser IDE, eXide, works. (2) has advantages if you are working on an existing app, e.g. cloned from git. In this case, you deploy the app once, configure the automatic sync and continue to edit files in the file system. We'll cover this workflow below. See the section on *Automatic Sync*.
 
@@ -60,14 +61,14 @@ If the server-side support app is not installed on the selected server instance,
 
 Once the package is activated, you should see the database browser tree view on either the left or right side of the Atom editor window. If not, please select *Toggle Database View* from the package menu (or press `cmd-ctrl-e` on mac, `ctrl-alt-e` on windows).
 
-Clicking on any resource in the database browser will open the remote file for editing in an Atom editor tab. Behind the scenes, the resource is downloaded and stored into a temporary directory. The connection with the remote resource is preserved though, so pressing save in the editor will reupload the changed content into the database. This should also work across restarts of Atom: the package detects if you had previously opened files stored in eXist and re-downloads them upon restart.
+Clicking on any resource in the database browser will open the remote file for editing in an Atom editor tab. Behind the scenes, the resource is downloaded and stored into a temporary directory. The connection with the remote resource is preserved though, so pressing save in the editor will re-upload the changed content into the database. This should also work across restarts of Atom: the package detects if you had previously opened files stored in eXist and re-downloads them upon restart.
 
 A right-click on a resource or collection in the database browser opens a context menu from which one can
 
-* create new collections or resources
-* delete resources
-* reindex a collection
-* refresh the collection tree
+*   create new collections or resources
+*   delete resources
+*   reindex a collection
+*   refresh the collection tree
 
 ### Editor Features
 
@@ -100,8 +101,8 @@ You will notice that if you place the cursor inside a variable name, other occur
 Pressing `alt-up` will expand the current selection to the closest XQuery expression, respecting XQuery semantics. Repeatedly press `alt-up` to select larger blocks.
 
 ### XML Editing in XQuery
-* open XML tags are closed automatically if you press `</` inside an XML context
-* changing the name of a tag will also change the corresponding opening or closing tag
+*   open XML tags are closed automatically if you press `</` inside an XML context
+*   changing the name of a tag will also change the corresponding opening or closing tag
 
 ![XML Editing](https://raw.githubusercontent.com/eXist-db/atom-existdb/master/xml-edit.gif)
 
@@ -113,8 +114,8 @@ You can send the XQuery code in the current editor to eXist for execution by pre
 ### Using the File Tree View
 Inside Atom's file tree pane, right clicking will show a subcategory *existdb* in the context menu for files and directories.
 
-* _Upload Selected_ will upload any selected files to the database collection highlighted in the DB view
-* _Deploy Package_ is shown if you click on a `.xar` file (which is eXist's format for installable packages). Selecting it will install the
+*   *Upload Selected* will upload any selected files to the database collection highlighted in the DB view
+*   *Deploy Package* is shown if you click on a `.xar` file (which is eXist's format for installable packages). Selecting it will install the
 xar into the database using eXist's package management features.
 
 ### Automatic Sync
@@ -157,13 +158,13 @@ active | sync will only be active if this is set to true
 ignore | an array of file path patterns which should not be synced
 
 ### Workflow for Working on a Cloned Repo
-Most of the time you will probably use automatic sync on an eXistdb application package you cloned from git. In this case, the workflow to get started would be as follows:
+Most of the time you will probably use automatic sync on an eXist-db application package you cloned from git. In this case, the workflow to get started would be as follows:
 
-1. clone the repository into a local directory
-2. build the xar and deploy it into eXistdb
-3. configure automatic sync on the project
-4. start coding
-5. commit your changes from the directory as usually
+1.  clone the repository into a local directory
+2.  build the xar and deploy it into eXistdb
+3.  configure automatic sync on the project
+4.  start coding
+5.  commit your changes from the directory as usually
 
 ### Caveats
 Changes made to the project directory while Atom is closed will not be detected and thus not synced to the database. Future versions of the package may contain a "sync upon startup" feature.
@@ -192,4 +193,4 @@ ant
 This creates `atom-editor-[version].xar` inside the `build/` directory. Deploy this into your eXist instance using the dashboard.
 
 #### Releasing
-Releases are managed by [semantic-release](https://github.com/semantic-release/apm-config). Your commit messages should follow [angular commit message conventions](https://github.com/angular/angular.js/blob/master/DEVELOPERS.md#-git-commit-guidelines). A bot will calculate the correct semantic version number, and update `package.json` and handle release. Do **NOT** modify this as part of your commits. 
+Releases are managed by [semantic-release](https://github.com/semantic-release/apm-config). Your commit messages should follow [angular commit message conventions](https://github.com/angular/angular.js/blob/master/DEVELOPERS.md#-git-commit-guidelines). A bot will calculate the correct semantic version number, and update `package.json` and handle release. Do **NOT** modify this as part of your commits.
