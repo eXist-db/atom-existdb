@@ -44,7 +44,7 @@
     "mkdirp": "latest",
     "request": "latest",
     "tmp": "latest",
-    "xqlint": "eXistSolutions/xqlint#exist-syntax"
+    "xqlint": "github:eXistSolutions/xqlint#exist-syntax"
   },
   "bundledDependencies": [
     "xqlint"
