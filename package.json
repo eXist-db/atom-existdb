@@ -38,7 +38,7 @@
     "event-kit": "latest",
     "fs-plus": "latest",
     "hyperclick": "latest",
-    "jquery": "^3.3.1",
+    "jquery": "^3.4.0",
     "mime": "latest",
     "minimatch": "latest",
     "mkdirp": "latest",
