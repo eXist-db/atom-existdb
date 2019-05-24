@@ -10,6 +10,7 @@ Sync = require './sync.js'
 util = require "./util"
 _path = require 'path'
 cp = require 'child_process'
+fs = require 'fs-plus';
 $ = require 'jquery'
 XQUtils = require './xquery-helper'
 InScopeVariables = require './var-visitor'
@@ -82,12 +83,32 @@ module.exports = Existdb =
             else
                 def = XQUtils.getFunctionDefinition(editor, pos)
                 @gotoDefinition(def.signature, editor) if def?
+        @subscriptions.add atom.commands.add 'atom-text-editor', 'existdb:deploy-latest': =>
+            regex = /\.xar$/;
+            dir = atom.project.getPaths()?[0]
+            xars = []
+            fs.traverseTree(dir,
+                (file) =>
+                    if regex.test(file)
+                        xars.push({ path: file, timestamp: fs.statSync(file).mtime })
+                (dir) => return true
+                =>
+                    if xars.length > 0
+                        xars.sort((a, b) -> b.timestamp - a.timestamp)
+                        xar = xars[0]
+                        atom.confirm
+                            message: "Install Package?"
+                            detailedMessage: "Would you like to install package " + _path.relative(dir, xar.path) + '?'
+                            buttons:
+                                Yes: => @treeView.deploy(xar.path)
+                                No: ->
+            )
 
         @tooltips = new CompositeDisposable
 
         atom.workspace.observeTextEditors((editor) =>
             editor.onDidChangeCursorPosition((ev) =>
-                return if @editTag(editor, ev)
+                # return if @editTag(editor, ev)
                 @markInScopeVars(editor, ev)
             )
             editor.getBuffer().onDidChange((ev) =>

@@ -10,6 +10,10 @@
             {
                 'label': 'Toggle Database View'
                 'command': 'existdb:toggle-tree-view'
+            },
+            {
+                'label': 'Deploy Latest'
+                'command': 'existdb:deploy-latest'
             }
         ]
     ],

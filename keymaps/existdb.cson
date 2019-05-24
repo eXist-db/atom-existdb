@@ -9,6 +9,7 @@
 # https://atom.io/docs/latest/behind-atom-keymaps-in-depth
 '.platform-darwin atom-workspace':
     'cmd-ctrl-e': 'existdb:toggle-tree-view'
+    'cmd-ctrl-u': 'existdb:deploy-latest'
 
 '.platform-darwin atom-text-editor[data-grammar="source xq"]':
     'ctrl-cmd-enter': 'existdb:run'
@@ -20,6 +21,7 @@
 
 '.platform-linux atom-workspace':
     'ctrl-alt-e': 'existdb:toggle-tree-view'
+    'ctrl-alt-u': 'existdb:deploy-latest'
 
 '.platform-linux atom-text-editor[data-grammar="source xq"]':
     'alt-shift-enter': 'existdb:run'
@@ -31,6 +33,7 @@
 
 '.platform-win32 atom-workspace':
     'ctrl-alt-e': 'existdb:toggle-tree-view'
+    'ctrl-alt-u': 'existdb:deploy-latest'
 
 '.platform-win32 atom-text-editor[data-grammar="source xq"]':
     'alt-shift-enter': 'existdb:run'
