@@ -71,9 +71,9 @@
     }
   },
   "consumedServices": {
-    "busy-signal": {
+    "atom-ide-busy-signal": {
       "versions": {
-        "1.0.0": "consumeSignal"
+        "0.1.0": "consumeBusySignal"
       }
     }
   },

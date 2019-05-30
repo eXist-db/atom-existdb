@@ -260,10 +260,10 @@ module.exports = Existdb =
 
     updateStatus: (message) ->
         if @busySignal?
-            if message == ""
-              @busySignal.clear()
-            else
-              @busySignal.add(message);
+            if @busyLastMessage?
+                @busyLastMessage.dispose()
+            if (message && message != '')
+                @busyLastMessage = @busySignal.reportBusy(message)
 
     closeTag: (ev) ->
         editor = atom.workspace.getActiveTextEditor()
@@ -542,6 +542,6 @@ module.exports = Existdb =
         column = error.column || 0
         return { line: line, column: parseInt(column), msg: msg }
 
-    consumeSignal: (registry) ->
-        @busySignal = registry.create()
+    consumeBusySignal: (api) ->
+        @busySignal = api
         @subscriptions.add(@busySignal)
