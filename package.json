@@ -92,7 +92,7 @@
     }
   },
   "devDependencies": {
-    "@semantic-release/apm": "^1.0.1",
+    "@semantic-release/apm": "^2.0.0",
     "@semantic-release/git": "^7.0.8",
     "semantic-release": "^15.13.3"
   }
