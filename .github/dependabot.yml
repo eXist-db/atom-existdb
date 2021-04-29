@@ -1,0 +1,22 @@
+version: 2
+updates:
+- package-ecosystem: npm
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "03:00"
+  open-pull-requests-limit: 10
+  versioning-strategy: increase
+  ignore:
+  - dependency-name: atom-package-deps
+    versions:
+    - 7.1.0
+    - 7.2.0
+    - 7.2.1
+    - 7.2.2
+  - dependency-name: mime
+    versions:
+    - 2.5.0
+  - dependency-name: handlebars
+    versions:
+    - 4.7.6
